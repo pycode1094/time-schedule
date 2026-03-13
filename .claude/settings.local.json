@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Edit",
+      "Bash(npm run *)",
+      "Bash(git commit *)",
+      "Bash(python *)",
+      "Bash(npx vite:*)"
+    ],
+    "deny": [
+      "Bash(rm -rf *)"
+    ]
+  }
+}
