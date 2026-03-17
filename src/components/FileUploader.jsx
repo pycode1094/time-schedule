@@ -3,6 +3,7 @@ import { useRef, useState } from 'react';
 export default function FileUploader({ onFileParsed }) {
   const [isDragging, setIsDragging] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [loadingMsg, setLoadingMsg] = useState('');
   const [error, setError] = useState(null);
   const inputRef = useRef(null);
 
@@ -14,6 +15,7 @@ export default function FileUploader({ onFileParsed }) {
     }
     setError(null);
     setIsLoading(true);
+    setLoadingMsg('업로드한 파일을 분석하고 있습니다...');
     try {
       const { parseExcelFile } = await import('../utils/parseExcel.js');
       const data = await parseExcelFile(file);
@@ -21,6 +23,22 @@ export default function FileUploader({ onFileParsed }) {
     } catch (e) {
       console.error(e);
       setError(`파싱 중 오류가 발생했습니다: ${e.message}`);
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  async function handleLoadDefault() {
+    setError(null);
+    setIsLoading(true);
+    setLoadingMsg('기본 시간표 데이터를 불러오고 있습니다...');
+    try {
+      const { loadDefaultSchedule } = await import('../utils/parseExcel.js');
+      const data = await loadDefaultSchedule();
+      onFileParsed(data);
+    } catch (e) {
+      console.error(e);
+      setError(`기본 데이터 로드 중 오류: ${e.message}`);
     } finally {
       setIsLoading(false);
     }
@@ -56,7 +74,7 @@ export default function FileUploader({ onFileParsed }) {
               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
             </svg>
           </div>
-          <p className="text-lg font-medium text-gray-700">시간표 데이터를 분석하고 있습니다...</p>
+          <p className="text-lg font-medium text-gray-700">{loadingMsg}</p>
           <p className="text-sm text-gray-400">잠시만 기다려 주세요</p>
         </div>
       </div>
@@ -78,13 +96,47 @@ export default function FileUploader({ onFileParsed }) {
           </p>
         </div>
 
+        {/* 기본 자료 보기 버튼 */}
+        <button
+          onClick={handleLoadDefault}
+          className="w-full flex items-center justify-between px-5 py-4 bg-white border-2 border-blue-200
+                     rounded-2xl hover:border-blue-400 hover:bg-blue-50/50 transition-all group"
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center group-hover:bg-blue-200 transition-colors">
+              <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                  d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+            </div>
+            <div className="text-left">
+              <p className="text-sm font-semibold text-gray-800">
+                3월 3일 기준 시간표 바로 보기
+              </p>
+              <p className="text-xs text-gray-400 mt-0.5">
+                종합시간표(20260303).xlsx
+              </p>
+            </div>
+          </div>
+          <svg className="w-5 h-5 text-gray-300 group-hover:text-blue-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+          </svg>
+        </button>
+
+        {/* 구분선 */}
+        <div className="flex items-center gap-3">
+          <div className="flex-1 h-px bg-gray-200" />
+          <span className="text-xs text-gray-400 font-medium">또는 직접 업로드</span>
+          <div className="flex-1 h-px bg-gray-200" />
+        </div>
+
         {/* 드래그앤드롭 영역 */}
         <div
           onDrop={onDrop}
           onDragOver={onDragOver}
           onDragLeave={onDragLeave}
           className={[
-            'border-2 border-dashed rounded-2xl p-12 text-center transition-all cursor-pointer',
+            'border-2 border-dashed rounded-2xl p-10 text-center transition-all cursor-pointer',
             isDragging
               ? 'border-blue-500 bg-blue-50 scale-[1.02]'
               : 'border-gray-300 bg-white hover:border-blue-400 hover:bg-blue-50/30',
@@ -100,20 +152,20 @@ export default function FileUploader({ onFileParsed }) {
           />
           <div className="flex flex-col items-center gap-3">
             <div className={[
-              'w-14 h-14 rounded-xl flex items-center justify-center transition-colors',
+              'w-12 h-12 rounded-xl flex items-center justify-center transition-colors',
               isDragging ? 'bg-blue-100' : 'bg-gray-100',
             ].join(' ')}>
-              <svg className={`w-7 h-7 ${isDragging ? 'text-blue-500' : 'text-gray-400'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className={`w-6 h-6 ${isDragging ? 'text-blue-500' : 'text-gray-400'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
-                  d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
               </svg>
             </div>
             <div>
-              <p className="text-base font-medium text-gray-700">
-                {isDragging ? '여기에 놓으세요' : '파일을 드래그하거나 클릭하여 선택'}
+              <p className="text-sm font-medium text-gray-700">
+                {isDragging ? '여기에 놓으세요' : '최신 엑셀 파일을 드래그하거나 클릭하여 선택'}
               </p>
               <p className="text-xs text-gray-400 mt-1">
-                .xlsx 파일만 지원 (예: 부산인력개발원 종합시간표.xlsx)
+                .xlsx 파일만 지원
               </p>
             </div>
           </div>

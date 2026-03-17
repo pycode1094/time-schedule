@@ -169,10 +169,9 @@ function logStats(schedule, teachers) {
 }
 
 // ─────────────────────────────────────────────────────────────
-// 메인 파싱 함수 (ArrayBuffer를 받아서 파싱 결과 객체 반환)
+// 공통 파싱 (ArrayBuffer → 결과 객체)
 // ─────────────────────────────────────────────────────────────
-export async function parseExcelFile(file) {
-  const arrayBuffer = await file.arrayBuffer();
+function parseWorkbook(arrayBuffer, fileName) {
   const workbook = XLSX.read(arrayBuffer, { type: 'array' });
 
   const wsSchedule = workbook.Sheets[workbook.SheetNames[0]];
@@ -191,7 +190,7 @@ export async function parseExcelFile(file) {
 
   return {
     meta: {
-      fileName:     file.name,
+      fileName,
       parsedAt:     new Date().toISOString(),
       dateRange,
       totalCourses: COURSES.length,
@@ -200,4 +199,23 @@ export async function parseExcelFile(file) {
     teachers,
     schedule,
   };
+}
+
+// ─────────────────────────────────────────────────────────────
+// 사용자 업로드 파일 파싱
+// ─────────────────────────────────────────────────────────────
+export async function parseExcelFile(file) {
+  const arrayBuffer = await file.arrayBuffer();
+  return parseWorkbook(arrayBuffer, file.name);
+}
+
+// ─────────────────────────────────────────────────────────────
+// 기본 내장 데이터 로드 (public/data/default-schedule.xlsx)
+// ─────────────────────────────────────────────────────────────
+export async function loadDefaultSchedule() {
+  const base = import.meta.env.BASE_URL || '/';
+  const res = await fetch(`${base}data/default-schedule.xlsx`);
+  if (!res.ok) throw new Error('기본 시간표 파일을 불러올 수 없습니다.');
+  const arrayBuffer = await res.arrayBuffer();
+  return parseWorkbook(arrayBuffer, '부산인력개발원 종합시간표(20260303).xlsx');
 }

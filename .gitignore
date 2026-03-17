@@ -25,4 +25,5 @@ dist-ssr
 
 # Excel data files
 *.xlsx
+!public/data/default-schedule.xlsx
 ~$*
