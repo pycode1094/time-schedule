@@ -111,10 +111,10 @@ export default function FileUploader({ onFileParsed }) {
             </div>
             <div className="text-left">
               <p className="text-sm font-semibold text-gray-800">
-                3월 3일 기준 시간표 바로 보기
+                4월 17일 기준 시간표 바로보기
               </p>
               <p className="text-xs text-gray-400 mt-0.5">
-                종합시간표(20260303).xlsx
+                종합시간표(20260417).xlsx
               </p>
             </div>
           </div>
