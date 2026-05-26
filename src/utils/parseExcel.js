@@ -221,20 +221,40 @@ export async function loadDefaultSchedule() {
 }
 
 // ─────────────────────────────────────────────────────────────
-// 서버에 저장된 현재 시간표 로드 (/api/schedule)
-//   - 관리자가 업로드한 파일이 있으면 그것을, 없으면 기본 파일을 받음
+// API base URL
+//   - dev: VITE_API_BASE 비어 있음 → 같은 origin (Vite 미들웨어가 처리)
+//   - prod: 빌드 시 https://<worker>.workers.dev 주입
+// ─────────────────────────────────────────────────────────────
+export const API_BASE = (import.meta.env.VITE_API_BASE || '').replace(/\/$/, '');
+
+// ─────────────────────────────────────────────────────────────
+// 현재 표시할 시간표 로드
+//   1) ${API_BASE}/api/schedule 시도 → 업로드본 또는 dev에서는 기본본 반환
+//   2) 실패하면(네트워크/404 등) 정적 default-schedule.xlsx 로 폴백
+//      → 백엔드 없는 정적 호스팅(GitHub Pages 등)에서도 일반 사용자가 기본 시간표를 볼 수 있음
 // ─────────────────────────────────────────────────────────────
 export async function loadCurrentSchedule() {
-  const res = await fetch('/api/schedule', { cache: 'no-store' });
-  if (!res.ok) throw new Error('서버에서 시간표를 불러오지 못했습니다.');
-  const source     = res.headers.get('X-Schedule-Source') || 'default';
-  const rawName    = res.headers.get('X-Schedule-Filename') || 'schedule.xlsx';
-  const uploadedAt = res.headers.get('X-Schedule-Uploaded-At') || null;
-  let fileName = rawName;
-  try { fileName = decodeURIComponent(rawName); } catch {}
-  const arrayBuffer = await res.arrayBuffer();
-  const data = parseWorkbook(arrayBuffer, fileName);
-  data.meta.source     = source;     // 'uploaded' | 'default'
-  data.meta.uploadedAt = uploadedAt;
+  try {
+    const res = await fetch(`${API_BASE}/api/schedule`, { cache: 'no-store' });
+    if (res.ok) {
+      const source     = res.headers.get('X-Schedule-Source') || 'default';
+      const rawName    = res.headers.get('X-Schedule-Filename') || 'schedule.xlsx';
+      const uploadedAt = res.headers.get('X-Schedule-Uploaded-At') || null;
+      let fileName = rawName;
+      try { fileName = decodeURIComponent(rawName); } catch {}
+      const arrayBuffer = await res.arrayBuffer();
+      const data = parseWorkbook(arrayBuffer, fileName);
+      data.meta.source     = source;     // 'uploaded' | 'default'
+      data.meta.uploadedAt = uploadedAt;
+      return data;
+    }
+    // 404 등은 fallback으로 흘림
+  } catch (e) {
+    // 네트워크 오류 (백엔드 미배포 등) → fallback
+    console.warn('[loadCurrentSchedule] API 실패, 정적 파일로 폴백:', e?.message || e);
+  }
+  const data = await loadDefaultSchedule();
+  data.meta.source     = 'default';
+  data.meta.uploadedAt = null;
   return data;
 }

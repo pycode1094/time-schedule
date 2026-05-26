@@ -1,0 +1,21 @@
+# Cloudflare Worker 설정
+#
+# 처음 배포할 때 (사용자 액션):
+#   1. npm install -g wrangler
+#   2. wrangler login                           # Cloudflare 계정 OAuth 로그인
+#   3. wrangler kv namespace create SCHEDULE_KV # KV namespace 생성 → 아래 id에 붙여넣기
+#   4. wrangler secret put ADMIN_PASSWORD       # 관리자 비밀번호 입력
+#   5. wrangler deploy                          # Worker 배포 → URL 발급
+#
+# 이후 재배포는 `wrangler deploy` 만 실행.
+
+name = "time-schedule-api"
+main = "worker/index.js"
+compatibility_date = "2025-01-01"
+
+[[kv_namespaces]]
+binding = "SCHEDULE_KV"
+id = "PUT_KV_NAMESPACE_ID_HERE"
+
+# ADMIN_PASSWORD 는 평문으로 두지 말고 secret 으로:
+#   wrangler secret put ADMIN_PASSWORD

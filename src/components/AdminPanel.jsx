@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react';
+import { API_BASE } from '../utils/parseExcel.js';
 
 export default function AdminPanel({
   adminPassword,
@@ -23,7 +24,7 @@ export default function AdminPanel({
     setLoginErr(null);
     setBusy(true);
     try {
-      const res = await fetch('/api/admin/login', {
+      const res = await fetch(`${API_BASE}/api/admin/login`, {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
         body:    JSON.stringify({ password }),
@@ -53,7 +54,7 @@ export default function AdminPanel({
     setBusyMsg('업로드 중...');
     try {
       const buf = await file.arrayBuffer();
-      const res = await fetch('/api/admin/upload', {
+      const res = await fetch(`${API_BASE}/api/admin/upload`, {
         method:  'POST',
         headers: {
           'Content-Type':       'application/octet-stream',
@@ -82,7 +83,7 @@ export default function AdminPanel({
     setUploadErr(null);
     setUploadMsg(null);
     try {
-      const res = await fetch('/api/admin/reset', {
+      const res = await fetch(`${API_BASE}/api/admin/reset`, {
         method:  'POST',
         headers: { 'X-Admin-Password': adminPassword },
       });
