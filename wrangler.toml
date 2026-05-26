@@ -15,7 +15,7 @@ compatibility_date = "2025-01-01"
 
 [[kv_namespaces]]
 binding = "SCHEDULE_KV"
-id = "PUT_KV_NAMESPACE_ID_HERE"
+id = "840f3191781f42b39e9af55d7a2ea93c"
 
 # ADMIN_PASSWORD 는 평문으로 두지 말고 secret 으로:
 #   wrangler secret put ADMIN_PASSWORD
