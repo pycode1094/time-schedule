@@ -294,7 +294,7 @@ export default function WeeklyOverviewTab({ courses, schedule }) {
                               {blocks.length === 0 ? (
                                 <div className="h-full min-h-[28px]" />
                               ) : (
-                                <div className="space-y-1">
+                                <div className="space-y-1.5">
                                   {blocks.map((b, bi) => {
                                     const isConflict = b.teacher && conflictKeys.has(`${dIdx}-${b.startPeriod - 1}-${b.teacher}`);
                                     const periodLabel = b.startPeriod === b.endPeriod
@@ -302,17 +302,16 @@ export default function WeeklyOverviewTab({ courses, schedule }) {
                                       : `${b.startPeriod}-${b.endPeriod}교시`;
                                     return (
                                       <div key={bi}
-                                        className={`text-[10px] sm:text-[11px] leading-snug px-1 sm:px-1.5 py-1 rounded
+                                        className={`min-w-0 leading-snug px-1.5 py-1 rounded space-y-0.5
                                           ${isConflict ? 'bg-red-100 ring-1 ring-red-300' : 'bg-gray-50'}`}
                                         title={`${periodLabel} ${b.subject}${b.teacher ? ' / ' + b.teacher : ''}`}
                                       >
-                                        {/* 모바일: 한 줄에 교시, 그 아래 교과목, 그 아래 강사. 데스크탑: 인라인 */}
-                                        <span className="block sm:inline text-gray-400 font-medium">{periodLabel}</span>
-                                        <span className="block sm:inline font-semibold text-gray-800 sm:ml-1 truncate">{b.subject}</span>
+                                        <div className="text-[10px] text-gray-400 font-medium truncate">{periodLabel}</div>
+                                        <div className="text-[11px] sm:text-xs font-semibold text-gray-800 truncate">{b.subject}</div>
                                         {b.teacher && (
-                                          <span className={`block sm:inline sm:ml-1 truncate ${isConflict ? 'text-red-600 font-bold' : 'text-gray-500'}`}>
-                                            <span className="hidden sm:inline">/ </span>{b.teacher}
-                                          </span>
+                                          <div className={`text-[10px] truncate ${isConflict ? 'text-red-600 font-bold' : 'text-gray-500'}`}>
+                                            {b.teacher}
+                                          </div>
                                         )}
                                       </div>
                                     );

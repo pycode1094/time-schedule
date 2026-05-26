@@ -169,6 +169,34 @@ function logStats(schedule, teachers) {
 }
 
 // ─────────────────────────────────────────────────────────────
+// 엑셀 row 1(헤더)에서 각 col 위치의 과정명/매니저를 동적으로 추출
+//   - "과정명 (매니저)" 패턴이면 분리. 매니저는 한글 2~4자만 인정 (그 외는 회차 등이라 name에 둠)
+//   - 헤더가 없으면 하드코딩 값(fallback) 사용
+// ─────────────────────────────────────────────────────────────
+const COURSE_HEADER_ROW = 1;
+
+function extractCoursesFromHeader(ws) {
+  const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: null });
+  const headerRow = rows[COURSE_HEADER_ROW] || [];
+
+  return COURSES.map(c => {
+    const raw = clean(headerRow[c.col]);
+    if (!raw) return { ...c };
+    const trimmed = raw.replace(/\s+/g, ' ').trim();
+    // 끝의 (...) 가 한국 사람 이름(한글 2~4자)이면 매니저로 분리
+    const m = trimmed.match(/^(.*)\s*\(([^()]+)\)\s*$/);
+    if (m) {
+      const namePart    = m[1].trim();
+      const maybeMgr    = m[2].trim();
+      if (/^[가-힣]{2,4}$/.test(maybeMgr)) {
+        return { ...c, name: namePart, manager: maybeMgr };
+      }
+    }
+    return { ...c, name: trimmed };
+  });
+}
+
+// ─────────────────────────────────────────────────────────────
 // 공통 파싱 (ArrayBuffer → 결과 객체)
 // ─────────────────────────────────────────────────────────────
 function parseWorkbook(arrayBuffer, fileName) {
@@ -177,8 +205,19 @@ function parseWorkbook(arrayBuffer, fileName) {
   const wsSchedule = workbook.Sheets[workbook.SheetNames[0]];
   const wsTeachers = workbook.Sheets[workbook.SheetNames[1]];
 
+  // 1) 엑셀 헤더에서 동적으로 과정명 추출
+  const dynamicCourses = extractCoursesFromHeader(wsSchedule);
+
+  // 2) 스케줄 파싱
   const schedule = parseScheduleSheet(wsSchedule);
   const teachers = parseTeachers(wsTeachers);
+
+  // 3) 실제로 데이터가 한 번이라도 등장한 과정만 노출
+  const usedIds = new Set();
+  for (const entry of Object.values(schedule)) {
+    for (const cid of Object.keys(entry.courses)) usedIds.add(cid);
+  }
+  const activeCourses = dynamicCourses.filter(c => usedIds.has(c.id));
 
   const dates = Object.keys(schedule).sort();
   const dateRange = {
@@ -193,9 +232,9 @@ function parseWorkbook(arrayBuffer, fileName) {
       fileName,
       parsedAt:     new Date().toISOString(),
       dateRange,
-      totalCourses: COURSES.length,
+      totalCourses: activeCourses.length,
     },
-    courses:  COURSES,
+    courses:  activeCourses,
     teachers,
     schedule,
   };
