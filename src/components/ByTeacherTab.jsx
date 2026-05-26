@@ -1,7 +1,7 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
 import {
   getWeekDates, getWeekMonday, parseDate,
-  shiftWeek, shiftMonth,
+  shiftWeek, shiftMonth, pickInitialWeek,
   PERIOD_TIMES, DAY_LABELS,
 } from '../utils/weekUtils';
 
@@ -46,17 +46,14 @@ export default function ByTeacherTab({ courses, teachers, schedule }) {
     return dates.sort();
   }, [schedule, selectedTeacher]);
 
-  const [weekMonday, setWeekMonday] = useState(() => {
-    if (teacherDates.length) return getWeekMonday(parseDate(teacherDates[0]));
-    return getWeekMonday(new Date());
-  });
+  const [weekMonday, setWeekMonday] = useState(() => pickInitialWeek(teacherDates));
 
-  // 강사 변경 시 첫 주로 이동
+  // 강사 변경 시 초기 주(오늘이 속한 주 우선)로 이동
   function handleTeacherChange(name) {
     setSelectedTeacher(name);
   }
   useMemo(() => {
-    if (teacherDates.length) setWeekMonday(getWeekMonday(parseDate(teacherDates[0])));
+    setWeekMonday(pickInitialWeek(teacherDates));
   }, [selectedTeacher]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const minWeek = teacherDates.length ? getWeekMonday(parseDate(teacherDates[0])) : weekMonday;

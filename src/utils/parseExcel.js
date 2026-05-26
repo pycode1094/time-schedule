@@ -219,3 +219,22 @@ export async function loadDefaultSchedule() {
   const arrayBuffer = await res.arrayBuffer();
   return parseWorkbook(arrayBuffer, '부산인력개발원 종합시간표(20260303).xlsx');
 }
+
+// ─────────────────────────────────────────────────────────────
+// 서버에 저장된 현재 시간표 로드 (/api/schedule)
+//   - 관리자가 업로드한 파일이 있으면 그것을, 없으면 기본 파일을 받음
+// ─────────────────────────────────────────────────────────────
+export async function loadCurrentSchedule() {
+  const res = await fetch('/api/schedule', { cache: 'no-store' });
+  if (!res.ok) throw new Error('서버에서 시간표를 불러오지 못했습니다.');
+  const source     = res.headers.get('X-Schedule-Source') || 'default';
+  const rawName    = res.headers.get('X-Schedule-Filename') || 'schedule.xlsx';
+  const uploadedAt = res.headers.get('X-Schedule-Uploaded-At') || null;
+  let fileName = rawName;
+  try { fileName = decodeURIComponent(rawName); } catch {}
+  const arrayBuffer = await res.arrayBuffer();
+  const data = parseWorkbook(arrayBuffer, fileName);
+  data.meta.source     = source;     // 'uploaded' | 'default'
+  data.meta.uploadedAt = uploadedAt;
+  return data;
+}

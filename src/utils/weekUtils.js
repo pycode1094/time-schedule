@@ -51,6 +51,26 @@ export function findFirstWeekForCourse(schedule, courseId) {
   return getWeekMonday(parseDate(dates[0]));
 }
 
+// 주어진 날짜 배열(정렬됨)을 기반으로 초기 표시 주(월요일)를 선택.
+// 오늘이 데이터 범위 안이면 오늘이 속한 주, 범위 이전이면 첫 주, 범위 이후면 마지막 주.
+export function pickInitialWeek(sortedDates) {
+  if (!sortedDates || sortedDates.length === 0) return getWeekMonday(new Date());
+  const minWeek   = getWeekMonday(parseDate(sortedDates[0]));
+  const maxWeek   = getWeekMonday(parseDate(sortedDates[sortedDates.length - 1]));
+  const todayWeek = getWeekMonday(new Date());
+  if (todayWeek < minWeek) return minWeek;
+  if (todayWeek > maxWeek) return maxWeek;
+  return todayWeek;
+}
+
+// 특정 과정에 대해 초기 표시 주(오늘 우선) 반환
+export function pickInitialWeekForCourse(schedule, courseId) {
+  const dates = Object.keys(schedule)
+    .filter(d => schedule[d].courses[courseId])
+    .sort();
+  return pickInitialWeek(dates);
+}
+
 // 이전/다음 주 이동
 export function shiftWeek(monday, delta) {
   const d = new Date(monday);

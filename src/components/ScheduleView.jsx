@@ -3,16 +3,17 @@ import ByCourseTab from './ByCourseTab';
 import ByDateTab from './ByDateTab';
 import ByTeacherTab from './ByTeacherTab';
 import WeeklyOverviewTab from './WeeklyOverviewTab';
+import AdminPanel from './AdminPanel';
 
 const TABS = [
-  { id: 'by-course',  label: '과정별' },
+  { id: 'weekly',     label: '전체 주간' },
   { id: 'by-date',    label: '날짜별' },
   { id: 'by-teacher', label: '강사별' },
-  { id: 'weekly',     label: '전체 주간' },
+  { id: 'by-course',  label: '과정별' },
 ];
 
-export default function ScheduleView({ data, onReset }) {
-  const [activeTab, setActiveTab] = useState('by-course');
+export default function ScheduleView({ data, adminPassword, onAdminLogin, onAdminLogout, onReload }) {
+  const [activeTab, setActiveTab] = useState('weekly');
 
   const { meta, courses, teachers, schedule } = data;
   const totalDates = Object.keys(schedule).length;
@@ -35,16 +36,14 @@ export default function ScheduleView({ data, onReset }) {
               {meta.dateRange.start} ~ {meta.dateRange.end}
             </p>
           </div>
-          <button
-            onClick={onReset}
-            className="flex-shrink-0 flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-            </svg>
-            <span className="hidden sm:inline">다른 파일</span>
-          </button>
+          <AdminPanel
+            adminPassword={adminPassword}
+            onLogin={onAdminLogin}
+            onLogout={onAdminLogout}
+            onReload={onReload}
+            uploadedAt={meta.uploadedAt}
+            source={meta.source}
+          />
         </div>
       </header>
 

@@ -27,3 +27,10 @@ dist-ssr
 *.xlsx
 !public/data/default-schedule.xlsx
 ~$*
+
+# 관리자 업로드본 (런타임에 생성됨)
+public/data/current-schedule.xlsx
+public/data/current-schedule.meta.json
+
+# Claude Code 로컬 설정
+.claude/

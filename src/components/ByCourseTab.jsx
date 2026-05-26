@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import {
-  getWeekDates, findFirstWeekForCourse, getWeekMonday, parseDate,
+  getWeekDates, pickInitialWeekForCourse, getWeekMonday, parseDate,
   shiftWeek, shiftMonth, getDataWeekRange, getDataMonths,
   PERIOD_TIMES, DAY_LABELS,
 } from '../utils/weekUtils';
@@ -91,12 +91,12 @@ export default function ByCourseTab({ courses, schedule }) {
   const palette = CAT_PALETTE[selectedCourse?.category] ?? DEFAULT_PALETTE;
 
   const [weekMonday, setWeekMonday] = useState(
-    () => findFirstWeekForCourse(schedule, courses[0]?.id ?? ''),
+    () => pickInitialWeekForCourse(schedule, courses[0]?.id ?? ''),
   );
 
   function handleCourseChange(id) {
     setSelectedId(id);
-    setWeekMonday(findFirstWeekForCourse(schedule, id));
+    setWeekMonday(pickInitialWeekForCourse(schedule, id));
   }
 
   const { min: minWeek, max: maxWeek } = useMemo(
