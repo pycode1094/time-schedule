@@ -146,7 +146,7 @@ export default function ByTeacherTab({ courses, teachers, schedule }) {
   }, [weekDates, schedule, selectedTeacher, courses]);
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3 sm:space-y-4">
       {/* ── 컨트롤 바 ─────────────────────────────── */}
       <div className="flex flex-wrap items-center gap-2">
         {/* 강사 검색 드롭다운 */}
@@ -164,7 +164,7 @@ export default function ByTeacherTab({ courses, teachers, schedule }) {
         )}
 
         {/* 주간 네비게이션 */}
-        <div className="flex items-center gap-1 ml-auto">
+        <div className="flex items-center gap-1 w-full sm:w-auto sm:ml-auto justify-center sm:justify-end flex-wrap">
           <NavBtn onClick={() => goMonth(-1)} disabled={!canPrev} title="이전 달">
             <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M11 19l-7-7 7-7M18 19l-7-7 7-7" />
@@ -179,7 +179,7 @@ export default function ByTeacherTab({ courses, teachers, schedule }) {
           <select
             value={currentMonthStr}
             onChange={e => handleMonthJump(e.target.value)}
-            className="px-3 py-1.5 text-sm font-semibold text-gray-700 bg-white border border-gray-200
+            className="px-2 sm:px-3 py-1.5 text-xs sm:text-sm font-semibold text-gray-700 bg-white border border-gray-200
                        rounded-lg text-center cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-400"
           >
             {dataMonths.map(ym => {
@@ -188,7 +188,7 @@ export default function ByTeacherTab({ courses, teachers, schedule }) {
             })}
           </select>
 
-          <span className="px-3 py-1.5 text-sm font-medium text-gray-500 bg-gray-50 border border-gray-200 rounded-lg">
+          <span className="px-2 sm:px-3 py-1.5 text-xs sm:text-sm font-medium text-gray-500 bg-gray-50 border border-gray-200 rounded-lg">
             {Math.ceil(weekMonday.getDate() / 7)}주차
           </span>
 
@@ -216,7 +216,7 @@ export default function ByTeacherTab({ courses, teachers, schedule }) {
       )}
 
       {/* ── 메인 레이아웃: 테이블 + 통계 ────────── */}
-      <div className="flex gap-4 items-start">
+      <div className="flex flex-col lg:flex-row gap-3 lg:gap-4 lg:items-start">
         {/* 주간 시간표 */}
         <div className="flex-1 min-w-0 overflow-x-auto rounded-xl border border-gray-200 shadow-sm">
           <table className="w-full border-collapse bg-white text-sm table-fixed">
@@ -265,7 +265,10 @@ export default function ByTeacherTab({ courses, teachers, schedule }) {
                         {items.map((item, idx) => (
                           <div key={idx} className={`${idx > 0 ? 'mt-1 pt-1 border-t border-red-200' : ''}`}>
                             <div className="flex items-center gap-1 min-w-0">
-                              <span className={`flex-shrink-0 text-[9px] font-bold px-1 py-0.5 rounded ${CAT_BADGE[item.category] || 'bg-gray-100 text-gray-600'}`}>
+                              <span
+                                className={`flex-shrink-0 text-[9px] font-bold px-1 py-0.5 rounded ${CAT_BADGE[item.category] || 'bg-gray-100 text-gray-600'}`}
+                                title={item.courseName}
+                              >
                                 {shortenCourseName(item.courseName)}
                               </span>
                             </div>
@@ -292,37 +295,42 @@ export default function ByTeacherTab({ courses, teachers, schedule }) {
           )}
         </div>
 
-        {/* ── 통계 패널 ──────────────────────────── */}
-        <div className="w-64 flex-shrink-0 space-y-3">
+        {/* ── 통계 패널: 모바일에선 하단, 데스크탑은 우측 사이드바 ──────── */}
+        <div className="w-full lg:w-64 lg:flex-shrink-0 grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-1 gap-3">
           {/* 교시 수 */}
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4">
-            <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">이번 주 수업</h3>
-            <p className="text-2xl font-bold text-indigo-600">{stats.totalPeriods}<span className="text-sm font-normal text-gray-500 ml-1">교시</span></p>
+          <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-3 sm:p-4">
+            <h3 className="text-[10px] sm:text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5 sm:mb-2">이번 주 수업</h3>
+            <p className="text-xl sm:text-2xl font-bold text-indigo-600">{stats.totalPeriods}<span className="text-xs sm:text-sm font-normal text-gray-500 ml-1">교시</span></p>
           </div>
 
-          {/* 담당 과정 */}
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4">
-            <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">담당 과정</h3>
+          {/* 담당 과정 — 풀네임 한 줄씩, 길면 ellipsis (title로 전체 보기) */}
+          <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-3 sm:p-4">
+            <h3 className="text-[10px] sm:text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5 sm:mb-2">담당 과정</h3>
             {stats.courses.length === 0
-              ? <p className="text-sm text-gray-400">없음</p>
-              : <div className="flex flex-wrap gap-1.5">
+              ? <p className="text-xs sm:text-sm text-gray-400">없음</p>
+              : <ul className="space-y-1">
                   {stats.courses.map(c => (
-                    <span key={c.id} className={`text-[11px] font-medium px-2 py-0.5 rounded-full ${CAT_BADGE[c.category] || 'bg-gray-100 text-gray-600'}`}>
-                      {shortenCourseName(c.name)}
-                    </span>
+                    <li key={c.id} className="flex items-center gap-1.5 min-w-0" title={c.name}>
+                      <span className={`flex-shrink-0 text-[9px] sm:text-[10px] font-bold px-1.5 py-0.5 rounded ${CAT_BADGE[c.category] || 'bg-gray-100 text-gray-600'}`}>
+                        {c.category.slice(0, 2)}
+                      </span>
+                      <span className="text-[11px] sm:text-xs text-gray-700 leading-snug truncate">
+                        {c.name}
+                      </span>
+                    </li>
                   ))}
-                </div>
+                </ul>
             }
           </div>
 
           {/* 교과목 */}
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4">
-            <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">교과목</h3>
+          <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-3 sm:p-4">
+            <h3 className="text-[10px] sm:text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5 sm:mb-2">교과목</h3>
             {stats.subjects.length === 0
-              ? <p className="text-sm text-gray-400">없음</p>
+              ? <p className="text-xs sm:text-sm text-gray-400">없음</p>
               : <div className="space-y-1">
                   {stats.subjects.map(s => (
-                    <p key={s} className="text-xs text-gray-700 leading-snug">{s}</p>
+                    <p key={s} className="text-[11px] sm:text-xs text-gray-700 leading-snug">{s}</p>
                   ))}
                 </div>
             }
@@ -334,15 +342,26 @@ export default function ByTeacherTab({ courses, teachers, schedule }) {
 }
 
 // ─────────────────────────────────────────────────────────────
-// 과정명 약칭 (괄호/기수 제거 후 앞 6자)
+// 과정명 약칭
+//   - [대괄호] 접두어 제거
+//   - 끝의 기수(-1기, -2 등)는 보존: 같은 시리즈 다른 기수 구분
+//   - (괄호) 안의 회차/지역도 짧게 보존
+//   - 본문은 maxBody자로 자름
 // ─────────────────────────────────────────────────────────────
-function shortenCourseName(name) {
-  const short = name
-    .replace(/\[.*?\]/g, '')
-    .replace(/-?\d+기?$/g, '')
-    .replace(/\(.*?\)/g, '')
-    .trim();
-  return short.length > 8 ? short.slice(0, 8) + '..' : short || name.slice(0, 8);
+function shortenCourseName(name, maxBody = 12) {
+  if (!name) return '';
+  let s = name.replace(/\[[^\]]*\]/g, '').trim();
+  // 끝의 기수 추출 (예: "-1기", "-2", "1기")
+  const gisuMatch = s.match(/[-\s]?(\d+회?기?)$/);
+  const gisu = gisuMatch ? gisuMatch[1] : '';
+  if (gisu) s = s.slice(0, gisuMatch.index).trim();
+  // 끝의 괄호 (예: "(부산)", "(5회차)") 추출
+  const parenMatch = s.match(/\(([^)]+)\)\s*$/);
+  const paren = parenMatch ? parenMatch[1] : '';
+  if (paren) s = s.slice(0, parenMatch.index).trim();
+  const body = s.length > maxBody ? s.slice(0, maxBody) + '…' : s;
+  const tail = [paren, gisu].filter(Boolean).join('-');
+  return tail ? `${body}-${tail}` : body || name.slice(0, maxBody);
 }
 
 // ─────────────────────────────────────────────────────────────

@@ -54,7 +54,7 @@ export default function ScheduleView({ data, adminPassword, onAdminLogin, onAdmi
             <Stat value={totalDates} label="일" />
             <Stat value={courses.length} label="개 과정" />
             <Stat value={teachers.length} label="명 강사" />
-            <span className="ml-auto text-[10px] sm:text-xs font-medium text-green-600 flex items-center gap-1">
+            <span className="ml-auto text-[10px] sm:text-xs font-medium text-green-600 hidden sm:flex items-center gap-1">
               <svg className="w-3 h-3 sm:w-3.5 sm:h-3.5" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clipRule="evenodd" />
               </svg>
@@ -73,7 +73,7 @@ export default function ScheduleView({ data, adminPassword, onAdminLogin, onAdmi
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
                 className={[
-                  'flex-1 sm:flex-none px-3 sm:px-5 py-2.5 sm:py-3 text-xs sm:text-sm font-medium border-b-2 transition-colors text-center',
+                  'flex-1 sm:flex-none px-2 sm:px-5 py-2 sm:py-3 text-[11px] sm:text-sm font-medium border-b-2 transition-colors text-center whitespace-nowrap',
                   activeTab === tab.id
                     ? 'border-blue-600 text-blue-600'
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300',

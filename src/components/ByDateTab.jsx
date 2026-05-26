@@ -94,9 +94,9 @@ export default function ByDateTab({ courses, schedule }) {
     .filter(g => g.items.length > 0);
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3 sm:space-y-4">
       {/* ── 날짜 선택 바 ─────────────────────────────── */}
-      <div className="flex flex-wrap items-center gap-2">
+      <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
         <button onClick={() => goDay(-1)} className="nav-btn" title="전일">
           <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
@@ -109,7 +109,7 @@ export default function ByDateTab({ courses, schedule }) {
           min={minDate}
           max={maxDate}
           onChange={e => setSelectedDate(e.target.value)}
-          className="px-3 py-2 text-sm font-medium bg-white border border-gray-300 rounded-lg
+          className="px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm font-medium bg-white border border-gray-300 rounded-lg
                      shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
         />
 
@@ -120,19 +120,19 @@ export default function ByDateTab({ courses, schedule }) {
         </button>
 
         <button onClick={goToday}
-          className="px-3 py-2 text-sm font-medium text-blue-600 bg-blue-50 hover:bg-blue-100
+          className="px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm font-medium text-blue-600 bg-blue-50 hover:bg-blue-100
                      rounded-lg transition-colors border border-blue-200">
           오늘
         </button>
 
         {selectedDate && (
-          <span className="text-sm font-semibold text-gray-600">
+          <span className="text-xs sm:text-sm font-semibold text-gray-600">
             ({dayOfWeek}요일)
           </span>
         )}
 
-        {/* 전체 과정 보기 토글 */}
-        <label className="ml-auto flex items-center gap-1.5 text-sm text-gray-600 cursor-pointer select-none">
+        {/* 전체 과정 보기 토글 — 모바일에선 다음 줄로 자연스럽게 떨어지게 */}
+        <label className="w-full sm:w-auto sm:ml-auto flex items-center gap-1.5 text-xs sm:text-sm text-gray-600 cursor-pointer select-none">
           <input
             type="checkbox"
             checked={showAll}
@@ -151,18 +151,18 @@ export default function ByDateTab({ courses, schedule }) {
       ) : (
         <>
           {/* ── 요약 패널 ────────────────────────────── */}
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm px-5 py-3">
-            <div className="flex flex-wrap items-center gap-x-5 gap-y-1 text-sm">
+          <div className="bg-white rounded-xl border border-gray-200 shadow-sm px-3 sm:px-5 py-2.5 sm:py-3">
+            <div className="flex flex-wrap items-center gap-x-2 sm:gap-x-5 gap-y-1 text-xs sm:text-sm">
               <Stat value={summary.activeCourses} label="개 과정 운영 중" />
-              <span className="text-gray-300">|</span>
+              <span className="text-gray-300 hidden sm:inline">|</span>
               <Stat value={summary.teachers} label="명 강사 투입" />
-              <span className="text-gray-300">|</span>
+              <span className="text-gray-300 hidden sm:inline">|</span>
               <Stat value={summary.rooms.length} label="개 강의실 사용" />
 
               {summary.rooms.length > 0 && (
                 <button
                   onClick={() => setRoomsOpen(v => !v)}
-                  className="ml-2 text-xs text-gray-400 hover:text-gray-600 transition-colors flex items-center gap-0.5"
+                  className="sm:ml-2 text-[11px] sm:text-xs text-gray-400 hover:text-gray-600 transition-colors flex items-center gap-0.5"
                 >
                   강의실 목록
                   <svg className={`w-3 h-3 transition-transform ${roomsOpen ? 'rotate-180' : ''}`}
@@ -182,22 +182,22 @@ export default function ByDateTab({ courses, schedule }) {
             )}
           </div>
 
-          {/* ── 시간표 테이블 ────────────────────────── */}
+          {/* ── 시간표 테이블 — 모바일에선 가로 스크롤 + 첫 열 sticky ── */}
           <div className="overflow-x-auto rounded-xl border border-gray-200 shadow-sm">
-            <table className="w-full border-collapse bg-white text-sm table-fixed">
+            <table className="w-full border-collapse bg-white text-sm table-fixed min-w-[800px] sm:min-w-0">
               <colgroup>
-                <col style={{ width: '200px' }} />
+                <col className="w-[140px] sm:w-[200px]" />
                 {PERIOD_TIMES.map((_, i) => <col key={i} />)}
               </colgroup>
               <thead>
                 <tr>
-                  <th className="bg-gray-700 text-white px-3 py-2.5 text-left text-xs font-semibold border-r border-white/20 sticky left-0 z-10">
+                  <th className="bg-gray-700 text-white px-2 sm:px-3 py-2 sm:py-2.5 text-left text-[11px] sm:text-xs font-semibold border-r border-white/20 sticky left-0 z-10">
                     과정
                   </th>
                   {PERIOD_TIMES.map((t, i) => (
-                    <th key={i} className="bg-gray-700 text-white px-2 py-2 text-center font-semibold border-r last:border-r-0 border-white/20">
-                      <div className="text-sm leading-tight">{i + 1}교시</div>
-                      <div className="text-[10px] font-normal opacity-80 mt-0.5">{t}</div>
+                    <th key={i} className="bg-gray-700 text-white px-1 sm:px-2 py-1.5 sm:py-2 text-center font-semibold border-r last:border-r-0 border-white/20">
+                      <div className="text-xs sm:text-sm leading-tight">{i + 1}교시</div>
+                      <div className="text-[9px] sm:text-[10px] font-normal opacity-80 mt-0.5">{t}</div>
                     </th>
                   ))}
                 </tr>
@@ -248,9 +248,9 @@ function CategoryGroup({ cat, items }) {
       {/* 카테고리 구분 행 */}
       <tr>
         <td colSpan={9}
-          className={`px-3 py-1.5 text-xs font-bold tracking-wide ${pal.subject} bg-gray-50 border-b border-gray-200`}>
+          className={`px-2 sm:px-3 py-1 sm:py-1.5 text-[11px] sm:text-xs font-bold tracking-wide ${pal.subject} bg-gray-50 border-b border-gray-200`}>
           {cat}
-          <span className="ml-1.5 font-normal text-gray-400">({items.length})</span>
+          <span className="ml-1 sm:ml-1.5 font-normal text-gray-400">({items.length})</span>
         </td>
       </tr>
       {items.map(({ course, slots, hasData }) => (
@@ -288,13 +288,13 @@ function CourseRow({ course, slots, hasData, pal }) {
 
   return (
     <tr className={`border-b border-gray-100 ${!hasData ? 'opacity-40' : ''}`}>
-      {/* 과정명 셀 */}
-      <td className="px-3 py-2 border-r border-gray-100 sticky left-0 bg-white z-[5]">
-        <div className="flex items-center gap-1.5 min-w-0">
-          <span className={`flex-shrink-0 text-[10px] font-semibold px-1.5 py-0.5 rounded ${pal.badge}`}>
+      {/* 과정명 셀 (sticky) */}
+      <td className="px-2 sm:px-3 py-1.5 sm:py-2 border-r border-gray-100 sticky left-0 bg-white z-[5]">
+        <div className="flex items-center gap-1 sm:gap-1.5 min-w-0">
+          <span className={`flex-shrink-0 text-[9px] sm:text-[10px] font-semibold px-1 sm:px-1.5 py-0.5 rounded ${pal.badge}`}>
             {course.category.slice(0, 2)}
           </span>
-          <span className="text-xs font-medium text-gray-800 truncate" title={course.name}>
+          <span className="text-[11px] sm:text-xs font-medium text-gray-800 truncate" title={course.name}>
             {course.name}
           </span>
         </div>
@@ -307,16 +307,16 @@ function CourseRow({ course, slots, hasData, pal }) {
         }
         return (
           <td key={idx} colSpan={m.span}
-            className={`${pal.cell} border-r border-gray-100 px-2 py-1.5 align-middle border-l-3 ${pal.accent}`}>
-            <p className={`font-semibold text-xs leading-snug truncate ${pal.subject}`} title={m.lesson.subject}>
+            className={`${pal.cell} border-r border-gray-100 px-1 sm:px-2 py-1 sm:py-1.5 align-middle border-l-3 ${pal.accent}`}>
+            <p className={`font-semibold text-[11px] sm:text-xs leading-snug truncate ${pal.subject}`} title={m.lesson.subject}>
               {m.lesson.subject}
             </p>
-            <div className="flex items-center gap-2 mt-0.5">
+            <div className="flex items-center gap-1 sm:gap-2 mt-0.5">
               {m.lesson.teacher && (
-                <span className={`text-[11px] ${pal.info}`}>{m.lesson.teacher}</span>
+                <span className={`text-[10px] sm:text-[11px] ${pal.info}`}>{m.lesson.teacher}</span>
               )}
               {m.lesson.room && (
-                <span className="text-[10px] text-gray-400">{m.lesson.room}</span>
+                <span className="text-[9px] sm:text-[10px] text-gray-400 truncate">{m.lesson.room}</span>
               )}
             </div>
           </td>
