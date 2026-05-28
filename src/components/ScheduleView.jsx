@@ -2,6 +2,7 @@ import { useState } from 'react';
 import ByCourseTab from './ByCourseTab';
 import ByDateTab from './ByDateTab';
 import ByTeacherTab from './ByTeacherTab';
+import ByRoomTab from './ByRoomTab';
 import WeeklyOverviewTab from './WeeklyOverviewTab';
 import AdminPanel from './AdminPanel';
 
@@ -9,6 +10,7 @@ const TABS = [
   { id: 'weekly',     label: '전체 주간' },
   { id: 'by-date',    label: '날짜별' },
   { id: 'by-teacher', label: '강사별' },
+  { id: 'by-room',    label: '강의실별' },
   { id: 'by-course',  label: '과정별' },
 ];
 
@@ -96,6 +98,9 @@ export default function ScheduleView({ data, adminPassword, onAdminLogin, onAdmi
         )}
         {activeTab === 'by-teacher' && (
           <ByTeacherTab courses={courses} teachers={teachers} schedule={schedule} />
+        )}
+        {activeTab === 'by-room' && (
+          <ByRoomTab courses={courses} schedule={schedule} />
         )}
         {activeTab === 'weekly' && (
           <WeeklyOverviewTab courses={courses} schedule={schedule} />

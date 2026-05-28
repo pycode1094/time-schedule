@@ -69,6 +69,37 @@ function clean(val) {
 }
 
 // ─────────────────────────────────────────────────────────────
+// 강의실명 정규화
+//   엑셀 입력 시 표기 오류/통합 호실을 정식 명칭으로 통합.
+//   "(NNN)..." 패턴에서 호실 번호만 보고 canonical 이름으로 치환.
+//   미정의 호실 또는 외부 장소(한화오션, 대양고1, 현장견학 등)는 그대로 둠.
+// ─────────────────────────────────────────────────────────────
+const ROOM_CANONICAL = {
+  '301': '(302)프로그램실1',   // 301호 → 302호로 통합
+  '302': '(302)프로그램실1',
+  '303': '(303)프로그램실2',
+  '304': '(304)프로그램실4',
+  '306': '(306)공유압실',
+  '307': '(307)프로그램실5',
+  '308': '(308)HRD강의실',
+  '901': '(901)스마트팩토리실',
+  '903': '(903)PLC 제어실',
+  '905': '(905)로봇제어실',
+  '906': '(906)전기공사실',
+  '907': '(907)자동제어기기실',
+  '908': '(908)자동제어실',
+  '909': '(909)프로그램실3',
+};
+
+function normalizeRoom(raw) {
+  if (raw == null) return raw;
+  const s = String(raw).trim();
+  const m = s.match(/^\(\s*(\d{3})\s*\)/);
+  if (m && ROOM_CANONICAL[m[1]]) return ROOM_CANONICAL[m[1]];
+  return s;
+}
+
+// ─────────────────────────────────────────────────────────────
 // 교강사연락처 시트 파싱 (이름 + 분야만)
 // ─────────────────────────────────────────────────────────────
 function parseTeachers(ws) {
@@ -121,7 +152,7 @@ function parseScheduleSheet(ws) {
         const room     = clean(curRow[course.col + 3]);
         if (typeVal)  lesson.type    = typeVal;
         if (teacher)  lesson.teacher = teacher;
-        if (room)     lesson.room    = room;
+        if (room)     lesson.room    = normalizeRoom(room);
 
         if (!dayCourses[course.id]) dayCourses[course.id] = [];
         dayCourses[course.id].push(lesson);
