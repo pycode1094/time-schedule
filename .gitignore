@@ -31,6 +31,7 @@ dist-ssr
 # 관리자 업로드본 (런타임에 생성됨)
 public/data/current-schedule.xlsx
 public/data/current-schedule.meta.json
+public/data/corp-uploads/
 
 # Claude Code 로컬 설정
 .claude/

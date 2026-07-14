@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import ScheduleView from './components/ScheduleView';
 import { loadCurrentSchedule } from './utils/parseExcel.js';
+import { loadCorpSchedules } from './utils/parseCorpExcel.js';
 
 const ADMIN_STORAGE_KEY = 'time-schedule-admin-password';
 
@@ -11,6 +12,18 @@ export default function App() {
   const [adminPassword, setAdminPassword] = useState(
     () => sessionStorage.getItem(ADMIN_STORAGE_KEY) || null
   );
+  // 기업교육팀 시간표 (없거나 로드 실패 시 null → 기존 화면 그대로)
+  const [corpData, setCorpData] = useState(null);
+
+  const reloadCorp = useCallback(async () => {
+    try {
+      setCorpData(await loadCorpSchedules());
+    } catch {
+      setCorpData(null);
+    }
+  }, []);
+
+  useEffect(() => { reloadCorp(); }, [reloadCorp]);
 
   const reload = useCallback(async () => {
     setLoading(true);
@@ -74,6 +87,8 @@ export default function App() {
   return (
     <ScheduleView
       data={parsedData}
+      corpData={corpData}
+      onCorpReload={reloadCorp}
       adminPassword={adminPassword}
       onAdminLogin={handleAdminLogin}
       onAdminLogout={handleAdminLogout}

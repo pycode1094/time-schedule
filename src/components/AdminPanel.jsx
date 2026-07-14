@@ -6,6 +6,8 @@ export default function AdminPanel({
   onLogin,
   onLogout,
   onReload,
+  onCorpReload,
+  corpSource,
   uploadedAt,
   source,
 }) {
@@ -18,6 +20,22 @@ export default function AdminPanel({
   const [uploadErr, setUploadErr]   = useState(null);
   const [uploadMsg, setUploadMsg]   = useState(null);
   const fileRef = useRef(null);
+
+  // 기업교육팀 (과정별 개별 파일)
+  const [corpFiles,  setCorpFiles]  = useState(null); // null = 로딩 전
+  const [corpErr,    setCorpErr]    = useState(null);
+  const [corpMsg,    setCorpMsg]    = useState(null);
+  const corpFileRef = useRef(null);
+
+  async function refreshCorpList() {
+    try {
+      const res = await fetch(`${API_BASE}/api/corp/list`, { cache: 'no-store' });
+      const json = await res.json().catch(() => ({}));
+      setCorpFiles(Array.isArray(json.files) ? json.files : []);
+    } catch {
+      setCorpFiles([]);
+    }
+  }
 
   async function handleLoginSubmit(e) {
     e.preventDefault();
@@ -34,6 +52,7 @@ export default function AdminPanel({
       onLogin(password);
       setShowLogin(false);
       setShowPanel(true);
+      refreshCorpList();
       setPassword('');
     } catch (err) {
       setLoginErr(err.message);
@@ -99,11 +118,99 @@ export default function AdminPanel({
     }
   }
 
+  // 기업교육팀: 여러 파일 업로드 (같은 파일명은 서버에서 교체 처리)
+  async function handleCorpUploadFiles(fileList) {
+    const files = [...(fileList || [])];
+    if (files.length === 0) return;
+    const invalid = files.find(f => !f.name.toLowerCase().endsWith('.xlsx'));
+    if (invalid) {
+      setCorpErr(`.xlsx 파일만 업로드할 수 있습니다: ${invalid.name}`);
+      return;
+    }
+    const existingNames = new Set((corpFiles || []).map(f => f.fileName));
+    const replaceCount = files.filter(f => existingNames.has(f.name)).length;
+    const summary = [
+      `기업교육팀 시간표 ${files.length}개 파일을 업로드할까요?`,
+      '',
+      ...files.map(f => `· ${f.name}${existingNames.has(f.name) ? ' (기존 파일 교체)' : ''}`),
+      '',
+      replaceCount > 0
+        ? `${replaceCount}개는 같은 이름의 기존 파일을 교체합니다.`
+        : null,
+      '업로드 즉시 모든 사용자에게 반영됩니다.',
+    ].filter(v => v !== null).join('\n');
+    if (!confirm(summary)) return;
+    setCorpErr(null);
+    setCorpMsg(null);
+    setBusy(true);
+    try {
+      let done = 0, replaced = 0;
+      for (const file of files) {
+        setBusyMsg(`기업교육팀 업로드 중... (${done + 1}/${files.length})`);
+        const buf = await file.arrayBuffer();
+        const res = await fetch(`${API_BASE}/api/admin/corp/upload`, {
+          method:  'POST',
+          headers: {
+            'Content-Type':     'application/octet-stream',
+            'X-Admin-Password': adminPassword,
+            'X-File-Name':      encodeURIComponent(file.name),
+          },
+          body: buf,
+        });
+        const json = await res.json().catch(() => ({}));
+        if (!res.ok || !json.ok) throw new Error(`${file.name}: ${json.error || '업로드 실패'}`);
+        done++;
+        if (json.replaced) replaced++;
+      }
+      setCorpMsg(`기업교육팀 ${done}개 파일 업로드 완료${replaced > 0 ? ` (${replaced}개 교체)` : ''}`);
+      setBusyMsg('기업교육팀 시간표 적용 중...');
+      await refreshCorpList();
+      await onCorpReload?.();
+    } catch (err) {
+      setCorpErr(err.message);
+      await refreshCorpList();
+    } finally {
+      setBusy(false);
+      setBusyMsg('');
+    }
+  }
+
+  async function handleCorpDelete(file) {
+    if (!confirm(`기업교육팀 시간표를 삭제할까요?\n\n${file.fileName}`)) return;
+    setCorpErr(null);
+    setCorpMsg(null);
+    setBusy(true);
+    setBusyMsg('삭제 중...');
+    try {
+      const res = await fetch(`${API_BASE}/api/admin/corp/delete`, {
+        method:  'POST',
+        headers: {
+          'Content-Type':     'application/json',
+          'X-Admin-Password': adminPassword,
+        },
+        body: JSON.stringify({ id: file.id }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok || !json.ok) throw new Error(json.error || '삭제 실패');
+      setCorpMsg(`삭제 완료: ${file.fileName}`);
+      await refreshCorpList();
+      await onCorpReload?.();
+    } catch (err) {
+      setCorpErr(err.message);
+    } finally {
+      setBusy(false);
+      setBusyMsg('');
+    }
+  }
+
   function openAdmin() {
     setUploadErr(null);
     setUploadMsg(null);
+    setCorpErr(null);
+    setCorpMsg(null);
     if (adminPassword) {
       setShowPanel(true);
+      refreshCorpList();
     } else {
       setShowLogin(true);
     }
@@ -185,58 +292,57 @@ export default function AdminPanel({
 
       {/* 관리자 패널 */}
       {showPanel && adminPassword && (
-        <Modal onClose={closePanel} title="관리자 패널" width="max-w-md">
-          <div className="space-y-4">
-            <div className="text-xs text-gray-500 space-y-0.5">
-              <p>
-                현재 표시 중인 시간표:{' '}
-                <span className="font-medium text-gray-700">
-                  {source === 'uploaded' ? '관리자 업로드본' : '기본 내장본'}
-                </span>
-              </p>
-              {uploadedAt && (
-                <p>업로드 시각: {new Date(uploadedAt).toLocaleString('ko-KR')}</p>
-              )}
-            </div>
+        <Modal onClose={closePanel} title="관리자 패널" width="max-w-lg">
+          <div className="space-y-5">
+            {/* ── 훈련취업팀 · 종합시간표 ─────────────────── */}
+            <section className="space-y-3">
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-blue-100 text-blue-700">훈련취업팀</span>
+                <h4 className="text-sm font-semibold text-gray-800">종합시간표 (통합 파일 1개)</h4>
+              </div>
 
-            <div
-              onClick={() => !busy && fileRef.current?.click()}
-              className="border-2 border-dashed border-gray-300 hover:border-blue-400 hover:bg-blue-50/30 rounded-xl p-6 text-center cursor-pointer transition-colors"
-              onDragOver={(e) => { e.preventDefault(); }}
-              onDrop={(e) => {
-                e.preventDefault();
-                if (!busy) handleUploadFile(e.dataTransfer.files[0]);
-              }}
-            >
-              <input
-                ref={fileRef}
-                type="file"
-                accept=".xlsx"
-                className="hidden"
-                onChange={(e) => {
-                  handleUploadFile(e.target.files[0]);
-                  e.target.value = '';
+              <div className="text-xs text-gray-500 space-y-0.5">
+                <p>
+                  현재 표시 중:{' '}
+                  <span className="font-medium text-gray-700">
+                    {source === 'uploaded' ? '관리자 업로드본' : '기본 내장본'}
+                  </span>
+                </p>
+                {uploadedAt && (
+                  <p>업로드 시각: {new Date(uploadedAt).toLocaleString('ko-KR')}</p>
+                )}
+              </div>
+
+              <div
+                onClick={() => !busy && fileRef.current?.click()}
+                className="border-2 border-dashed border-gray-300 hover:border-blue-400 hover:bg-blue-50/30 rounded-xl p-4 text-center cursor-pointer transition-colors"
+                onDragOver={(e) => { e.preventDefault(); }}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  if (!busy) handleUploadFile(e.dataTransfer.files[0]);
                 }}
-              />
-              <p className="text-sm font-medium text-gray-700">
-                새 엑셀(.xlsx) 파일 업로드
-              </p>
-              <p className="text-xs text-gray-400 mt-1">
-                클릭 또는 드래그&드롭. 업로드 즉시 모든 사용자에게 반영됩니다.
-              </p>
-            </div>
+              >
+                <input
+                  ref={fileRef}
+                  type="file"
+                  accept=".xlsx"
+                  className="hidden"
+                  onChange={(e) => {
+                    handleUploadFile(e.target.files[0]);
+                    e.target.value = '';
+                  }}
+                />
+                <p className="text-sm font-medium text-gray-700">
+                  종합시간표 엑셀(.xlsx) 업로드
+                </p>
+                <p className="text-xs text-gray-400 mt-1">
+                  클릭 또는 드래그&드롭. 기존 업로드본을 대체합니다.
+                </p>
+              </div>
 
-            {busy && (
-              <p className="text-xs text-blue-600">{busyMsg || '처리 중...'}</p>
-            )}
-            {uploadErr && (
-              <p className="text-xs text-red-600">{uploadErr}</p>
-            )}
-            {uploadMsg && (
-              <p className="text-xs text-green-600">{uploadMsg}</p>
-            )}
+              {uploadErr && <p className="text-xs text-red-600">{uploadErr}</p>}
+              {uploadMsg && <p className="text-xs text-green-600">{uploadMsg}</p>}
 
-            <div className="flex justify-between items-center pt-2 border-t border-gray-100">
               <button
                 onClick={handleResetUpload}
                 disabled={busy || source !== 'uploaded'}
@@ -244,6 +350,87 @@ export default function AdminPanel({
               >
                 기본 시간표로 되돌리기
               </button>
+            </section>
+
+            {/* ── 기업교육팀 · 과정별 시간표 ─────────────── */}
+            <section className="space-y-3 pt-4 border-t border-gray-200">
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-purple-100 text-purple-700">기업교육팀</span>
+                <h4 className="text-sm font-semibold text-gray-800">과정별 시간표 (과정마다 파일 1개)</h4>
+              </div>
+
+              <div
+                onClick={() => !busy && corpFileRef.current?.click()}
+                className="border-2 border-dashed border-gray-300 hover:border-purple-400 hover:bg-purple-50/30 rounded-xl p-4 text-center cursor-pointer transition-colors"
+                onDragOver={(e) => { e.preventDefault(); }}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  if (!busy) handleCorpUploadFiles(e.dataTransfer.files);
+                }}
+              >
+                <input
+                  ref={corpFileRef}
+                  type="file"
+                  accept=".xlsx"
+                  multiple
+                  className="hidden"
+                  onChange={(e) => {
+                    handleCorpUploadFiles(e.target.files);
+                    e.target.value = '';
+                  }}
+                />
+                <p className="text-sm font-medium text-gray-700">
+                  훈련시간표 엑셀(.xlsx) 업로드 — 여러 파일 선택 가능
+                </p>
+                <p className="text-xs text-gray-400 mt-1">
+                  파일이 추가로 쌓이며, 같은 파일명을 올리면 해당 과정만 교체됩니다.
+                  업로드 전 확인 창이 표시됩니다.
+                </p>
+              </div>
+
+              {corpErr && <p className="text-xs text-red-600">{corpErr}</p>}
+              {corpMsg && <p className="text-xs text-green-600">{corpMsg}</p>}
+
+              {/* 업로드된 파일 목록 */}
+              <div className="space-y-1.5">
+                {corpFiles === null && (
+                  <p className="text-xs text-gray-400">목록 불러오는 중...</p>
+                )}
+                {corpFiles !== null && corpFiles.length === 0 && (
+                  <p className="text-xs text-gray-400">
+                    업로드된 파일 없음
+                    {corpSource === 'default' && ' — 현재 내장 기본 파일을 표시 중입니다. 업로드하면 업로드 목록으로 대체됩니다.'}
+                  </p>
+                )}
+                {(corpFiles || [])
+                  .slice()
+                  .sort((a, b) => a.fileName.localeCompare(b.fileName, 'ko'))
+                  .map(f => (
+                    <div key={f.id} className="flex items-center gap-2 px-2.5 py-1.5 bg-gray-50 border border-gray-100 rounded-lg">
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs font-medium text-gray-700 truncate" title={f.fileName}>{f.fileName}</p>
+                        {f.uploadedAt && (
+                          <p className="text-[10px] text-gray-400">{new Date(f.uploadedAt).toLocaleString('ko-KR')}</p>
+                        )}
+                      </div>
+                      <button
+                        onClick={() => handleCorpDelete(f)}
+                        disabled={busy}
+                        className="flex-shrink-0 text-[11px] px-2 py-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded disabled:opacity-40"
+                        title="이 과정 시간표 삭제"
+                      >
+                        삭제
+                      </button>
+                    </div>
+                  ))}
+              </div>
+            </section>
+
+            {busy && (
+              <p className="text-xs text-blue-600">{busyMsg || '처리 중...'}</p>
+            )}
+
+            <div className="flex justify-end items-center pt-2 border-t border-gray-100">
               <button
                 onClick={handleLogoutClick}
                 disabled={busy}

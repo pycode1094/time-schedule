@@ -9,6 +9,7 @@ const CAT_BADGE = {
   'K-Digital':  'bg-blue-100 text-blue-700',
   '기업맞춤':    'bg-emerald-100 text-emerald-700',
   '고등학교':    'bg-amber-100 text-amber-700',
+  '기업교육':    'bg-purple-100 text-purple-700',
 };
 
 export default function RoomSingleView({ courses, schedule }) {

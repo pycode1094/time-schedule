@@ -74,7 +74,7 @@ function clean(val) {
 //   "(NNN)..." 패턴에서 호실 번호만 보고 canonical 이름으로 치환.
 //   미정의 호실 또는 외부 장소(한화오션, 대양고1, 현장견학 등)는 그대로 둠.
 // ─────────────────────────────────────────────────────────────
-const ROOM_CANONICAL = {
+export const ROOM_CANONICAL = {
   '301': '(302)프로그램실1',   // 301호 → 302호로 통합
   '302': '(302)프로그램실1',
   '303': '(303)프로그램실2',
@@ -91,7 +91,7 @@ const ROOM_CANONICAL = {
   '909': '(909)프로그램실3',
 };
 
-function normalizeRoom(raw) {
+export function normalizeRoom(raw) {
   if (raw == null) return raw;
   const s = String(raw).trim();
   const m = s.match(/^\(\s*(\d{3})\s*\)/);

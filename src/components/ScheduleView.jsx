@@ -4,6 +4,7 @@ import ByDateTab from './ByDateTab';
 import ByTeacherTab from './ByTeacherTab';
 import ByRoomTab from './ByRoomTab';
 import WeeklyOverviewTab from './WeeklyOverviewTab';
+import CorpScheduleTab from './CorpScheduleTab';
 import AdminPanel from './AdminPanel';
 
 const TABS = [
@@ -12,9 +13,10 @@ const TABS = [
   { id: 'by-teacher', label: '강사별' },
   { id: 'by-room',    label: '강의실별' },
   { id: 'by-course',  label: '과정별' },
+  { id: 'corp',       label: '기업교육' },
 ];
 
-export default function ScheduleView({ data, adminPassword, onAdminLogin, onAdminLogout, onReload }) {
+export default function ScheduleView({ data, corpData, onCorpReload, adminPassword, onAdminLogin, onAdminLogout, onReload }) {
   const [activeTab, setActiveTab] = useState('weekly');
 
   const { meta, courses, teachers, schedule } = data;
@@ -43,6 +45,8 @@ export default function ScheduleView({ data, adminPassword, onAdminLogin, onAdmi
             onLogin={onAdminLogin}
             onLogout={onAdminLogout}
             onReload={onReload}
+            onCorpReload={onCorpReload}
+            corpSource={corpData?.source}
             uploadedAt={meta.uploadedAt}
             source={meta.source}
           />
@@ -100,10 +104,13 @@ export default function ScheduleView({ data, adminPassword, onAdminLogin, onAdmi
           <ByTeacherTab courses={courses} teachers={teachers} schedule={schedule} />
         )}
         {activeTab === 'by-room' && (
-          <ByRoomTab courses={courses} schedule={schedule} />
+          <ByRoomTab courses={courses} schedule={schedule} corpData={corpData} />
         )}
         {activeTab === 'weekly' && (
           <WeeklyOverviewTab courses={courses} schedule={schedule} />
+        )}
+        {activeTab === 'corp' && (
+          <CorpScheduleTab corpData={corpData} />
         )}
       </main>
     </div>
