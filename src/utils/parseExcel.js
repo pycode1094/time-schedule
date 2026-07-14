@@ -8,9 +8,9 @@ export const COURSES = [
   { id: "course_02", name: "스마트제조공정 로보틱스 부트캠프-1기",       col: 8,  manager: "오정렬", category: "K-Digital" },
   { id: "course_03", name: "스마트제조공정 로보틱스 부트캠프-2기",       col: 12, manager: "이대열", category: "K-Digital" },
   { id: "course_04", name: "AIoT 반도체설계 Academy-2기",              col: 16, manager: "장용선", category: "K-Digital" },
-  { id: "course_05", name: "[인텔]AI융합 DX 마스터 클래스-4기",         col: 20, manager: "노진혁", category: "K-Digital" },
-  { id: "course_06", name: "[인텔]AI융합 DX 마스터 클래스-5기",         col: 24, manager: "김영석", category: "K-Digital" },
-  { id: "course_07", name: "[인텔]AI융합 DX 마스터 클래스-6기",         col: 28, manager: "오정렬", category: "K-Digital" },
+  { id: "course_05", name: "[인텔]AI융합 DX 마스터 클래스-4기",         col: 20, manager: "노진혁", category: "기업맞춤" },
+  { id: "course_06", name: "[인텔]AI융합 DX 마스터 클래스-5기",         col: 24, manager: "김영석", category: "기업맞춤" },
+  { id: "course_07", name: "[인텔]AI융합 DX 마스터 클래스-6기",         col: 28, manager: "오정렬", category: "기업맞춤" },
   { id: "course_08", name: "[한화오션] Ocean DX Academy-부산(5회차)",   col: 32, manager: "권연경", category: "기업맞춤" },
   { id: "course_09", name: "[한화오션] Ocean DX Academy-부산(3회차)",   col: 36, manager: "신정아", category: "기업맞춤" },
   { id: "course_10", name: "[한화오션] Ocean DX Academy-거제(4회차)",   col: 40, manager: "",      category: "기업맞춤" },
@@ -206,13 +206,28 @@ function logStats(schedule, teachers) {
 // ─────────────────────────────────────────────────────────────
 const COURSE_HEADER_ROW = 1;
 
+// ─────────────────────────────────────────────────────────────
+// 과정 카테고리 분류 (과정명 기준)
+//   고등학교: 대양고·경성전자고·부산컴퓨터과학고 등 학교 과정만
+//   기업맞춤: 인텔·한화 위탁 과정
+//   그 외:    K-Digital (일반 과정)
+//   열 위치가 아닌 과정명으로 판별하므로, 엑셀에서 열 구성이
+//   바뀌어도 카테고리가 어긋나지 않는다.
+// ─────────────────────────────────────────────────────────────
+export function categorizeCourse(name) {
+  const s = String(name || '');
+  if (/고등학교|고교|과학고/.test(s)) return '고등학교';
+  if (/인텔|한화/.test(s)) return '기업맞춤';
+  return 'K-Digital';
+}
+
 function extractCoursesFromHeader(ws) {
   const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: null });
   const headerRow = rows[COURSE_HEADER_ROW] || [];
 
   return COURSES.map(c => {
     const raw = clean(headerRow[c.col]);
-    if (!raw) return { ...c };
+    if (!raw) return { ...c, category: categorizeCourse(c.name) };
     const trimmed = raw.replace(/\s+/g, ' ').trim();
     // 끝의 (...) 가 한국 사람 이름(한글 2~4자)이면 매니저로 분리
     const m = trimmed.match(/^(.*)\s*\(([^()]+)\)\s*$/);
@@ -220,10 +235,10 @@ function extractCoursesFromHeader(ws) {
       const namePart    = m[1].trim();
       const maybeMgr    = m[2].trim();
       if (/^[가-힣]{2,4}$/.test(maybeMgr)) {
-        return { ...c, name: namePart, manager: maybeMgr };
+        return { ...c, name: namePart, manager: maybeMgr, category: categorizeCourse(namePart) };
       }
     }
-    return { ...c, name: trimmed };
+    return { ...c, name: trimmed, category: categorizeCourse(trimmed) };
   });
 }
 
