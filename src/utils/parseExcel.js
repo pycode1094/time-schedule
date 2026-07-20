@@ -1,7 +1,9 @@
 import * as XLSX from 'xlsx';
 
 // ─────────────────────────────────────────────────────────────
-// 과정 정의 (col은 0-based 인덱스)
+// 과정 폴백 정의 (col은 0-based 인덱스)
+//   실제 과정 목록은 엑셀 헤더에서 동적으로 감지(detectCourses)하며,
+//   헤더 1행에 과정명이 비어 있는 열은 여기서 열 위치로 이름을 보충한다.
 // ─────────────────────────────────────────────────────────────
 export const COURSES = [
   { id: "course_01", name: "[근로복지공단]전기공사기초과정",            col: 4,  manager: "지양하", category: "K-Digital" },
@@ -24,9 +26,11 @@ export const COURSES = [
   { id: "course_18", name: "대양고등학교-3",                            col: 72, manager: "",      category: "고등학교" },
 ];
 
-const COURSE_NAME_SET = new Set(COURSES.map(c => c.name));
 const DATA_START_ROW = 30;   // 0-based (엑셀 Row 31)
 const PERIODS_PER_DAY = 8;
+const COURSE_COL_START = 4;  // 첫 과정 블록의 교과목 열
+const COURSE_COL_STEP  = 4;  // 과정 1개 = 교과목/이론실습/강사/실명 4열
+const SUB_HEADER_ROW   = 3;  // "교과목/이론·실습/강사/실명" 서브헤더 행
 
 // ─────────────────────────────────────────────────────────────
 // 날짜 → "YYYY-MM-DD" 변환
@@ -117,11 +121,17 @@ function parseTeachers(ws) {
 }
 
 // ─────────────────────────────────────────────────────────────
-// 종합시간표 시트 파싱
+// 종합시간표 시트 파싱 (courses: detectCourses 결과)
 // ─────────────────────────────────────────────────────────────
-function parseScheduleSheet(ws) {
-  const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: null });
+function parseScheduleSheet(rows, courses) {
   const schedule = {};
+
+  // 마커/서브헤더 행 제외용: 과정명·헤더 원문·"교과목"
+  const markerSet = new Set(['교과목']);
+  for (const c of courses) {
+    markerSet.add(c.name);
+    if (c.rawHeader) markerSet.add(c.rawHeader);
+  }
 
   let rowIdx = DATA_START_ROW;
 
@@ -141,10 +151,10 @@ function parseScheduleSheet(ws) {
 
       const period = offset + 1;
 
-      for (const course of COURSES) {
+      for (const course of courses) {
         const subject = clean(curRow[course.col]);
         if (!subject) continue;
-        if (COURSE_NAME_SET.has(subject)) continue;  // 마커 행 제외
+        if (markerSet.has(subject)) continue;  // 마커 행 제외
 
         const lesson = { period, subject };
         const typeVal  = clean(curRow[course.col + 1]);
@@ -173,13 +183,13 @@ function parseScheduleSheet(ws) {
 // ─────────────────────────────────────────────────────────────
 // 통계 콘솔 출력
 // ─────────────────────────────────────────────────────────────
-function logStats(schedule, teachers) {
+function logStats(schedule, teachers, courses) {
   const dates = Object.keys(schedule);
   console.group('[시간표 파싱 통계]');
   console.log(`총 날짜 수: ${dates.length}일`);
   console.log(`총 강사 수: ${teachers.length}명`);
 
-  const courseIdToName = Object.fromEntries(COURSES.map(c => [c.id, c.name]));
+  const courseIdToName = Object.fromEntries(courses.map(c => [c.id, c.name]));
   const dayCount = {};
   let totalLessons = 0;
   for (const entry of Object.values(schedule)) {
@@ -190,7 +200,7 @@ function logStats(schedule, teachers) {
   }
 
   console.group('과정별 수업일수');
-  for (const course of COURSES) {
+  for (const course of courses) {
     const days = dayCount[course.id] || 0;
     if (days > 0) console.log(`  ${course.id} | ${days}일 | ${courseIdToName[course.id]}`);
   }
@@ -200,9 +210,12 @@ function logStats(schedule, teachers) {
 }
 
 // ─────────────────────────────────────────────────────────────
-// 엑셀 row 1(헤더)에서 각 col 위치의 과정명/매니저를 동적으로 추출
+// 엑셀 헤더에서 과정 목록을 동적으로 감지
+//   - 4열부터 4열 단위(교과목/이론실습/강사/실명)로 스캔.
+//   - 1행에 과정명이 있거나 3행 서브헤더가 "교과목"이면 과정 블록으로 인정.
+//     → 엑셀에서 과정이 추가/이동되어도 열 개수 제한 없이 모두 잡힌다.
 //   - "과정명 (매니저)" 패턴이면 분리. 매니저는 한글 2~4자만 인정 (그 외는 회차 등이라 name에 둠)
-//   - 헤더가 없으면 하드코딩 값(fallback) 사용
+//   - 과정명이 비어 있으면 하드코딩 폴백(COURSES)에서 같은 열의 이름을 보충
 // ─────────────────────────────────────────────────────────────
 const COURSE_HEADER_ROW = 1;
 
@@ -221,25 +234,53 @@ export function categorizeCourse(name) {
   return 'K-Digital';
 }
 
-function extractCoursesFromHeader(ws) {
-  const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: null });
+function detectCourses(rows) {
   const headerRow = rows[COURSE_HEADER_ROW] || [];
+  const subRow    = rows[SUB_HEADER_ROW]    || [];
+  const maxCol    = Math.max(headerRow.length, subRow.length);
 
-  return COURSES.map(c => {
-    const raw = clean(headerRow[c.col]);
-    if (!raw) return { ...c, category: categorizeCourse(c.name) };
+  const courses = [];
+  for (let col = COURSE_COL_START; col < maxCol; col += COURSE_COL_STEP) {
+    const raw     = clean(headerRow[col]);
+    const isBlock = raw !== null || clean(subRow[col]) === '교과목';
+    if (!isBlock) continue;
+
+    const fallback = COURSES.find(c => c.col === col);
+    const id = `course_${String(courses.length + 1).padStart(2, '0')}`;
+
+    if (!raw) {
+      // 과정명 없는 블록: 폴백 이름 사용 (없으면 열 위치로 표기)
+      const name = fallback?.name || `미상 과정(${col}열)`;
+      courses.push({
+        id, col, name,
+        manager:  fallback?.manager || '',
+        category: categorizeCourse(name),
+        rawHeader: null,
+      });
+      continue;
+    }
+
     const trimmed = raw.replace(/\s+/g, ' ').trim();
+    let name    = trimmed;
+    let manager = '';
     // 끝의 (...) 가 한국 사람 이름(한글 2~4자)이면 매니저로 분리
     const m = trimmed.match(/^(.*)\s*\(([^()]+)\)\s*$/);
-    if (m) {
-      const namePart    = m[1].trim();
-      const maybeMgr    = m[2].trim();
-      if (/^[가-힣]{2,4}$/.test(maybeMgr)) {
-        return { ...c, name: namePart, manager: maybeMgr, category: categorizeCourse(namePart) };
-      }
+    if (m && /^[가-힣]{2,4}$/.test(m[2].trim())) {
+      name    = m[1].trim();
+      manager = m[2].trim();
     }
-    return { ...c, name: trimmed, category: categorizeCourse(trimmed) };
-  });
+    courses.push({
+      id, col, name, manager,
+      category: categorizeCourse(name),
+      rawHeader: trimmed,
+    });
+  }
+
+  // 헤더를 전혀 못 읽은 경우(비정상 파일): 하드코딩 폴백 전체 사용
+  if (!courses.length) {
+    return COURSES.map(c => ({ ...c, rawHeader: null, category: categorizeCourse(c.name) }));
+  }
+  return courses;
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -250,12 +291,13 @@ function parseWorkbook(arrayBuffer, fileName) {
 
   const wsSchedule = workbook.Sheets[workbook.SheetNames[0]];
   const wsTeachers = workbook.Sheets[workbook.SheetNames[1]];
+  const rows = XLSX.utils.sheet_to_json(wsSchedule, { header: 1, defval: null });
 
-  // 1) 엑셀 헤더에서 동적으로 과정명 추출
-  const dynamicCourses = extractCoursesFromHeader(wsSchedule);
+  // 1) 엑셀 헤더에서 동적으로 과정 목록 감지 (열 개수 제한 없음)
+  const dynamicCourses = detectCourses(rows);
 
   // 2) 스케줄 파싱
-  const schedule = parseScheduleSheet(wsSchedule);
+  const schedule = parseScheduleSheet(rows, dynamicCourses);
   const teachers = parseTeachers(wsTeachers);
 
   // 3) 실제로 데이터가 한 번이라도 등장한 과정만 노출
@@ -271,7 +313,7 @@ function parseWorkbook(arrayBuffer, fileName) {
     end:   dates[dates.length - 1] || '',
   };
 
-  logStats(schedule, teachers);
+  logStats(schedule, teachers, activeCourses);
 
   return {
     meta: {
