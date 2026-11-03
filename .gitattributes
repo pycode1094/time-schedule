@@ -1,0 +1,2 @@
+# 훅 스크립트는 LF 줄바꿈이어야 sh 가 실행할 수 있다
+.githooks/* text eol=lf

@@ -1,0 +1,45 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  # 저장소를 새로 만든 뒤 Pages · secret 을 설정하고 다시 배포할 때: gh workflow run deploy.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+        env:
+          # Cloudflare Worker 배포 후 https://...workers.dev 형태로 등록.
+          # 비어 있으면 클라이언트가 정적 default-schedule.xlsx 로 자동 폴백.
+          VITE_API_BASE: ${{ secrets.VITE_API_BASE }}
+          # 강사 알림: 시간표를 올리는 PC 의 발송 도우미(notify-helper)가 비즈고로 보낸다.
+          # 화면 JS 에 그대로 들어가는 값이라 비밀이 아니다. (TIS 넘기기는 보류)
+          VITE_NOTIFY_MODE: helper
+          VITE_NOTIFY_HELPER_URL: http://127.0.0.1:5599
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+      - id: deployment
+        uses: actions/deploy-pages@v4

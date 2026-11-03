@@ -1,0 +1,7 @@
+/* Vite 기본 스타일 제거 */
+#root {
+  max-width: none;
+  margin: 0;
+  padding: 0;
+  text-align: left;
+}

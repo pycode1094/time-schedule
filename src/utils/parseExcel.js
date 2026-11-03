@@ -1,0 +1,422 @@
+// Node(scripts/)에서도 SSF 등을 쓰도록 ESM 빌드를 직접 지정 (브라우저 번들은 원래 이 파일을 씀)
+import * as XLSX from 'xlsx/xlsx.mjs';
+import { PHONE_HEADER_RE } from './sanitizeExcel.js';
+
+// ─────────────────────────────────────────────────────────────
+// 과정 폴백 정의 (col은 0-based 인덱스)
+//   실제 과정 목록은 엑셀 헤더에서 동적으로 감지(detectCourses)하며,
+//   헤더 1행에 과정명이 비어 있는 열은 여기서 열 위치로 이름을 보충한다.
+// ─────────────────────────────────────────────────────────────
+export const COURSES = [
+  { id: "course_01", name: "[근로복지공단]전기공사기초과정",            col: 4,  manager: "지양하", category: "K-Digital" },
+  { id: "course_02", name: "스마트제조공정 로보틱스 부트캠프-1기",       col: 8,  manager: "오정렬", category: "K-Digital" },
+  { id: "course_03", name: "스마트제조공정 로보틱스 부트캠프-2기",       col: 12, manager: "이대열", category: "K-Digital" },
+  { id: "course_04", name: "AIoT 반도체설계 Academy-2기",              col: 16, manager: "장용선", category: "K-Digital" },
+  { id: "course_05", name: "[인텔]AI융합 DX 마스터 클래스-4기",         col: 20, manager: "노진혁", category: "기업맞춤" },
+  { id: "course_06", name: "[인텔]AI융합 DX 마스터 클래스-5기",         col: 24, manager: "김영석", category: "기업맞춤" },
+  { id: "course_07", name: "[인텔]AI융합 DX 마스터 클래스-6기",         col: 28, manager: "오정렬", category: "기업맞춤" },
+  { id: "course_08", name: "[한화오션] Ocean DX Academy-부산(5회차)",   col: 32, manager: "권연경", category: "기업맞춤" },
+  { id: "course_09", name: "[한화오션] Ocean DX Academy-부산(3회차)",   col: 36, manager: "신정아", category: "기업맞춤" },
+  { id: "course_10", name: "[한화오션] Ocean DX Academy-거제(4회차)",   col: 40, manager: "",      category: "기업맞춤" },
+  { id: "course_11", name: "[한화오션] Ocean DX Academy-거제(1회차)",   col: 44, manager: "설재호", category: "기업맞춤" },
+  { id: "course_12", name: "부산컴퓨터과학고-2",                        col: 48, manager: "",      category: "고등학교" },
+  { id: "course_13", name: "부산컴퓨터과학고-3",                        col: 52, manager: "",      category: "고등학교" },
+  { id: "course_14", name: "경성전자고등학교-2",                        col: 56, manager: "",      category: "고등학교" },
+  { id: "course_15", name: "경성전자고등학교-3",                        col: 60, manager: "",      category: "고등학교" },
+  { id: "course_16", name: "대양고등학교-1",                            col: 64, manager: "",      category: "고등학교" },
+  { id: "course_17", name: "대양고등학교-2",                            col: 68, manager: "",      category: "고등학교" },
+  { id: "course_18", name: "대양고등학교-3",                            col: 72, manager: "",      category: "고등학교" },
+];
+
+const DATA_START_ROW = 30;   // 0-based (엑셀 Row 31)
+const PERIODS_PER_DAY = 8;
+const COURSE_COL_START = 4;  // 첫 과정 블록의 교과목 열
+const COURSE_COL_STEP  = 4;  // 과정 1개 = 교과목/이론실습/강사/실명 4열
+const SUB_HEADER_ROW   = 3;  // "교과목/이론·실습/강사/실명" 서브헤더 행
+
+// ─────────────────────────────────────────────────────────────
+// 날짜 → "YYYY-MM-DD" 변환
+// ─────────────────────────────────────────────────────────────
+function toDateStr(val) {
+  if (!val) return null;
+
+  // cellDates: true 옵션으로 Date 객체가 넘어오는 경우
+  if (val instanceof Date) {
+    const y = val.getFullYear();
+    const m = String(val.getMonth() + 1).padStart(2, '0');
+    const d = String(val.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  }
+
+  // SheetJS 날짜 직렬 번호(숫자)인 경우
+  if (typeof val === 'number') {
+    const date = XLSX.SSF.parse_date_code(val);
+    if (!date) return null;
+    const y = date.y;
+    const m = String(date.m).padStart(2, '0');
+    const d = String(date.d).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  }
+
+  // 이미 문자열인 경우
+  const s = String(val).trim();
+  // YYYY-MM-DD 형식이면 그대로
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+  return null;
+}
+
+// ─────────────────────────────────────────────────────────────
+// 셀 값 정리: 빈 값은 null 반환
+// ─────────────────────────────────────────────────────────────
+function clean(val) {
+  if (val === null || val === undefined) return null;
+  const s = String(val).trim();
+  return s === '' ? null : s;
+}
+
+// ─────────────────────────────────────────────────────────────
+// 강의실명 정규화
+//   엑셀 입력 시 표기 오류/통합 호실을 정식 명칭으로 통합.
+//   "(NNN)..." 패턴에서 호실 번호만 보고 canonical 이름으로 치환.
+//   미정의 호실 또는 외부 장소(한화오션, 대양고1, 현장견학 등)는 그대로 둠.
+// ─────────────────────────────────────────────────────────────
+export const ROOM_CANONICAL = {
+  '301': '(302)프로그램실1',   // 301호 → 302호로 통합
+  '302': '(302)프로그램실1',
+  '303': '(303)프로그램실2',
+  '304': '(304)프로그램실4',
+  '306': '(306)공유압실',
+  '307': '(307)프로그램실5',
+  '308': '(308)HRD강의실',
+  '901': '(901)스마트팩토리실',
+  '903': '(903)PLC 제어실',
+  '905': '(905)로봇제어실',
+  '906': '(906)전기공사실',
+  '907': '(907)자동제어기기실',
+  '908': '(908)자동제어실',
+  '909': '(909)프로그램실3',
+};
+
+export function normalizeRoom(raw) {
+  if (raw == null) return raw;
+  const s = String(raw).trim();
+  const m = s.match(/^\(\s*(\d{3})\s*\)/);
+  if (m && ROOM_CANONICAL[m[1]]) return ROOM_CANONICAL[m[1]];
+  return s;
+}
+
+// ─────────────────────────────────────────────────────────────
+// 전화번호 정규화 → "010XXXXXXXX" (숫자만). 없거나 형식이 다르면 ''
+// ─────────────────────────────────────────────────────────────
+export function normalizePhone(val) {
+  if (val === null || val === undefined) return '';
+  let digits = String(val).replace(/\D/g, '');
+  if (/^8210\d{8}$/.test(digits)) digits = '0' + digits.slice(2);  // +82 10-...
+  if (/^10\d{8}$/.test(digits))   digits = '0' + digits;           // 숫자 셀이라 앞자리 0이 빠진 경우
+  return /^010\d{8}$/.test(digits) ? digits : '';
+}
+
+// ─────────────────────────────────────────────────────────────
+// 교강사연락처 시트 파싱 (이름 + 분야 + 전화번호)
+//   phone 은 알림 발송용이며 화면에는 표시하지 않는다.
+//   공개 배포본은 연락처 열이 비어 있으므로 phone 은 '' 가 된다.
+// ─────────────────────────────────────────────────────────────
+function parseTeachers(ws) {
+  const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: null });
+  const teachers = [];
+  // Row 0 (1행): 제목/빈행, Row 1 (2행): 헤더("교강사 | 연락처 | 비고"), Row 2 (3행)부터 데이터
+  const phoneCol = (rows[1] || []).findIndex(h => h !== null && PHONE_HEADER_RE.test(String(h)));
+  for (let i = 2; i < rows.length; i++) {
+    const name = clean(rows[i][0]);
+    const field = clean(rows[i][2]);
+    const phone = phoneCol >= 0 ? normalizePhone(rows[i][phoneCol]) : '';
+    if (name) {
+      teachers.push(field ? { name, field, phone } : { name, phone });
+    }
+  }
+  return teachers;
+}
+
+// ─────────────────────────────────────────────────────────────
+// 종합시간표 시트 파싱 (courses: detectCourses 결과)
+// ─────────────────────────────────────────────────────────────
+function parseScheduleSheet(rows, courses) {
+  const schedule = {};
+
+  // 마커/서브헤더 행 제외용: 과정명·헤더 원문·"교과목"
+  const markerSet = new Set(['교과목']);
+  for (const c of courses) {
+    markerSet.add(c.name);
+    if (c.rawHeader) markerSet.add(c.rawHeader);
+  }
+
+  let rowIdx = DATA_START_ROW;
+
+  while (rowIdx < rows.length) {
+    const dateRow = rows[rowIdx];
+    if (!dateRow) { rowIdx++; continue; }
+
+    const dateStr = toDateStr(dateRow[0]);
+    if (!dateStr) { rowIdx++; continue; }
+
+    const day = clean(dateRow[1]) || '';
+    const dayCourses = {};
+
+    for (let offset = 0; offset < PERIODS_PER_DAY; offset++) {
+      const curRow = rows[rowIdx + offset];
+      if (!curRow) continue;
+
+      const period = offset + 1;
+
+      for (const course of courses) {
+        const subject = clean(curRow[course.col]);
+        if (!subject) continue;
+        if (markerSet.has(subject)) continue;  // 마커 행 제외
+
+        const lesson = { period, subject };
+        const typeVal  = clean(curRow[course.col + 1]);
+        const teacher  = clean(curRow[course.col + 2]);
+        const room     = clean(curRow[course.col + 3]);
+        if (typeVal)  lesson.type    = typeVal;
+        if (teacher)  lesson.teacher = teacher;
+        if (room)     lesson.room    = normalizeRoom(room);
+
+        if (!dayCourses[course.id]) dayCourses[course.id] = [];
+        dayCourses[course.id].push(lesson);
+      }
+    }
+
+    // 수업이 하나라도 있는 날짜만 포함
+    if (Object.keys(dayCourses).length > 0) {
+      schedule[dateStr] = { day, courses: dayCourses };
+    }
+
+    rowIdx += PERIODS_PER_DAY;
+  }
+
+  return schedule;
+}
+
+// ─────────────────────────────────────────────────────────────
+// 통계 콘솔 출력
+// ─────────────────────────────────────────────────────────────
+function logStats(schedule, teachers, courses) {
+  const dates = Object.keys(schedule);
+  console.group('[시간표 파싱 통계]');
+  console.log(`총 날짜 수: ${dates.length}일`);
+  console.log(`총 강사 수: ${teachers.length}명`);
+
+  const courseIdToName = Object.fromEntries(courses.map(c => [c.id, c.name]));
+  const dayCount = {};
+  let totalLessons = 0;
+  for (const entry of Object.values(schedule)) {
+    for (const [cid, lessons] of Object.entries(entry.courses)) {
+      dayCount[cid] = (dayCount[cid] || 0) + 1;
+      totalLessons += lessons.length;
+    }
+  }
+
+  console.group('과정별 수업일수');
+  for (const course of courses) {
+    const days = dayCount[course.id] || 0;
+    if (days > 0) console.log(`  ${course.id} | ${days}일 | ${courseIdToName[course.id]}`);
+  }
+  console.groupEnd();
+  console.log(`총 수업 교시 수: ${totalLessons}교시`);
+  console.groupEnd();
+}
+
+// ─────────────────────────────────────────────────────────────
+// 엑셀 헤더에서 과정 목록을 동적으로 감지
+//   - 4열부터 4열 단위(교과목/이론실습/강사/실명)로 스캔.
+//   - 1행에 과정명이 있거나 3행 서브헤더가 "교과목"이면 과정 블록으로 인정.
+//     → 엑셀에서 과정이 추가/이동되어도 열 개수 제한 없이 모두 잡힌다.
+//   - "과정명 (매니저)" 패턴이면 분리. 매니저는 한글 2~4자만 인정 (그 외는 회차 등이라 name에 둠)
+//   - 과정명이 비어 있으면 하드코딩 폴백(COURSES)에서 같은 열의 이름을 보충
+// ─────────────────────────────────────────────────────────────
+const COURSE_HEADER_ROW = 1;
+
+// ─────────────────────────────────────────────────────────────
+// 과정 카테고리 분류 (과정명 기준)
+//   고등학교: 대양고·경성전자고·부산컴퓨터과학고 등 학교 과정만
+//   기업맞춤: 인텔·한화 위탁 과정
+//   그 외:    K-Digital (일반 과정)
+//   열 위치가 아닌 과정명으로 판별하므로, 엑셀에서 열 구성이
+//   바뀌어도 카테고리가 어긋나지 않는다.
+// ─────────────────────────────────────────────────────────────
+export function categorizeCourse(name) {
+  const s = String(name || '');
+  if (/고등학교|고교|과학고/.test(s)) return '고등학교';
+  if (/인텔|한화/.test(s)) return '기업맞춤';
+  return 'K-Digital';
+}
+
+function detectCourses(rows) {
+  const headerRow = rows[COURSE_HEADER_ROW] || [];
+  const subRow    = rows[SUB_HEADER_ROW]    || [];
+  const maxCol    = Math.max(headerRow.length, subRow.length);
+
+  const courses = [];
+  for (let col = COURSE_COL_START; col < maxCol; col += COURSE_COL_STEP) {
+    const raw     = clean(headerRow[col]);
+    const isBlock = raw !== null || clean(subRow[col]) === '교과목';
+    if (!isBlock) continue;
+
+    const fallback = COURSES.find(c => c.col === col);
+    const id = `course_${String(courses.length + 1).padStart(2, '0')}`;
+
+    if (!raw) {
+      // 과정명 없는 블록: 폴백 이름 사용 (없으면 열 위치로 표기)
+      const name = fallback?.name || `미상 과정(${col}열)`;
+      courses.push({
+        id, col, name,
+        manager:  fallback?.manager || '',
+        category: categorizeCourse(name),
+        rawHeader: null,
+      });
+      continue;
+    }
+
+    const trimmed = raw.replace(/\s+/g, ' ').trim();
+    let name    = trimmed;
+    let manager = '';
+    // 끝의 (...) 가 한국 사람 이름(한글 2~4자)이면 매니저로 분리
+    const m = trimmed.match(/^(.*)\s*\(([^()]+)\)\s*$/);
+    if (m && /^[가-힣]{2,4}$/.test(m[2].trim())) {
+      name    = m[1].trim();
+      manager = m[2].trim();
+    }
+    courses.push({
+      id, col, name, manager,
+      category: categorizeCourse(name),
+      rawHeader: trimmed,
+    });
+  }
+
+  // 헤더를 전혀 못 읽은 경우(비정상 파일): 하드코딩 폴백 전체 사용
+  if (!courses.length) {
+    return COURSES.map(c => ({ ...c, rawHeader: null, category: categorizeCourse(c.name) }));
+  }
+  return courses;
+}
+
+// ─────────────────────────────────────────────────────────────
+// 공통 파싱 (ArrayBuffer → 결과 객체)
+//   브라우저 외에 Node 스크립트(scripts/diff-test.mjs)에서도 사용.
+//   log: false 면 콘솔 통계 출력 생략
+// ─────────────────────────────────────────────────────────────
+export function parseWorkbook(arrayBuffer, fileName, { log = true } = {}) {
+  const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+
+  const wsSchedule = workbook.Sheets[workbook.SheetNames[0]];
+  const wsTeachers = workbook.Sheets[workbook.SheetNames[1]];
+  const rows = XLSX.utils.sheet_to_json(wsSchedule, { header: 1, defval: null });
+
+  // 1) 엑셀 헤더에서 동적으로 과정 목록 감지 (열 개수 제한 없음)
+  const dynamicCourses = detectCourses(rows);
+
+  // 2) 스케줄 파싱
+  const schedule = parseScheduleSheet(rows, dynamicCourses);
+  const teachers = parseTeachers(wsTeachers);
+
+  // 3) 실제로 데이터가 한 번이라도 등장한 과정만 노출
+  const usedIds = new Set();
+  for (const entry of Object.values(schedule)) {
+    for (const cid of Object.keys(entry.courses)) usedIds.add(cid);
+  }
+  const activeCourses = dynamicCourses.filter(c => usedIds.has(c.id));
+
+  const dates = Object.keys(schedule).sort();
+  const dateRange = {
+    start: dates[0] || '',
+    end:   dates[dates.length - 1] || '',
+  };
+
+  if (log) logStats(schedule, teachers, activeCourses);
+
+  return {
+    meta: {
+      fileName,
+      parsedAt:     new Date().toISOString(),
+      dateRange,
+      totalCourses: activeCourses.length,
+    },
+    courses:  activeCourses,
+    teachers,
+    schedule,
+  };
+}
+
+// ─────────────────────────────────────────────────────────────
+// 사용자 업로드 파일 파싱
+// ─────────────────────────────────────────────────────────────
+export async function parseExcelFile(file) {
+  const arrayBuffer = await file.arrayBuffer();
+  return parseWorkbook(arrayBuffer, file.name);
+}
+
+// ─────────────────────────────────────────────────────────────
+// 기본 내장 데이터 로드 (public/data/default-schedule.xlsx)
+// ─────────────────────────────────────────────────────────────
+export async function loadDefaultSchedule() {
+  const base = import.meta.env?.BASE_URL || '/';
+  const res = await fetch(`${base}data/default-schedule.xlsx`);
+  if (!res.ok) throw new Error('기본 시간표 파일을 불러올 수 없습니다.');
+  const arrayBuffer = await res.arrayBuffer();
+  return parseWorkbook(arrayBuffer, '부산인력개발원 종합시간표(20260303).xlsx');
+}
+
+// ─────────────────────────────────────────────────────────────
+// API base URL
+//   - dev: VITE_API_BASE 비어 있음 → 같은 origin (Vite 미들웨어가 처리)
+//   - prod: 빌드 시 https://<worker>.workers.dev 주입
+//   - Node(scripts/)에서는 import.meta.env 가 없으므로 ''
+// ─────────────────────────────────────────────────────────────
+export const API_BASE = (import.meta.env?.VITE_API_BASE || '').replace(/\/$/, '');
+
+// ─────────────────────────────────────────────────────────────
+// 현재 표시할 시간표 로드
+//   1) ${API_BASE}/api/schedule 시도 → 업로드본 또는 dev에서는 기본본 반환
+//   2) 실패하면(네트워크/404 등) 정적 default-schedule.xlsx 로 폴백
+//      → 백엔드 없는 정적 호스팅(GitHub Pages 등)에서도 일반 사용자가 기본 시간표를 볼 수 있음
+// ─────────────────────────────────────────────────────────────
+export async function loadCurrentSchedule() {
+  try {
+    const res = await fetch(`${API_BASE}/api/schedule`, { cache: 'no-store' });
+    if (res.ok) {
+      const source     = res.headers.get('X-Schedule-Source') || 'default';
+      const rawName    = res.headers.get('X-Schedule-Filename') || 'schedule.xlsx';
+      const uploadedAt = res.headers.get('X-Schedule-Uploaded-At') || null;
+      let fileName = rawName;
+      try { fileName = decodeURIComponent(rawName); } catch { /* 잘못된 인코딩이면 원문 사용 */ }
+      const arrayBuffer = await res.arrayBuffer();
+      const data = parseWorkbook(arrayBuffer, fileName);
+      data.meta.source     = source;     // 'uploaded' | 'default'
+      data.meta.uploadedAt = uploadedAt;
+      return data;
+    }
+    // 404 등은 fallback으로 흘림
+  } catch (e) {
+    // 네트워크 오류 (백엔드 미배포 등) → fallback
+    console.warn('[loadCurrentSchedule] API 실패, 정적 파일로 폴백:', e?.message || e);
+  }
+  const data = await loadDefaultSchedule();
+  data.meta.source     = 'default';
+  data.meta.uploadedAt = null;
+  return data;
+}
+
+// ─────────────────────────────────────────────────────────────
+// 최근 업로드별 변경 내역 (강사별 탭 "최근 변경" 표시용)
+//   → { uploads: [{ uploadedAt, changes }] }. 실패하면(백엔드 없음 등) 빈 내역
+// ─────────────────────────────────────────────────────────────
+export async function loadScheduleChanges() {
+  try {
+    const res = await fetch(`${API_BASE}/api/schedule/changes`, { cache: 'no-store' });
+    if (!res.ok) return { uploads: [] };
+    const json = await res.json();
+    return { uploads: Array.isArray(json.uploads) ? json.uploads : [] };
+  } catch {
+    return { uploads: [] };
+  }
+}

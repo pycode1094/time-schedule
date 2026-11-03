@@ -1,0 +1,52 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Excel data files
+*.xlsx
+!public/data/default-schedule.xlsx
+~$*
+
+# 관리자 업로드본 (런타임에 생성됨)
+public/data/current-schedule.xlsx
+public/data/current-schedule.meta.json
+public/data/schedule-changes.json
+public/data/corp-uploads/
+
+# Claude Code 로컬 설정
+.claude/
+
+# 환경변수 (실제 값은 .env.local 에. 예시 파일만 커밋)
+.env*
+!.env.example
+
+# 원본 백업 등 비공개 파일 (연락처 포함)
+private/
+
+# 변경 감지 테스트용 시간표 (연락처 포함 원본에서 생성)
+test-data/
+
+# 알림톡 발송 도우미: API 키 설정과 발송 로그 (위 .env*, logs 규칙과 겹치지만 명시)
+notify-helper/.env
+notify-helper/logs/

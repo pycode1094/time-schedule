@@ -1,0 +1,5 @@
+#!/bin/sh
+# 커밋 전 비밀 · 개인정보 유출 검사
+#   켜기: git config core.hooksPath .githooks
+#   (API 키, 휴대전화 번호, .env 파일, xlsx 원본이 스테이징되어 있으면 커밋을 막는다)
+exec node scripts/check-secrets.mjs
