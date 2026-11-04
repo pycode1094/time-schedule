@@ -9,6 +9,7 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "notify-helper": "node notify-helper/server.js",
+    "test": "node --test \"notify-helper/test/*.test.js\"",
     "check-secrets": "node scripts/check-secrets.mjs"
   },
   "dependencies": {

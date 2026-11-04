@@ -3,6 +3,7 @@
 //   비즈고 OMNI API V2  POST {Base URI}/v1/send/omni
 //   text 는 템플릿 변수를 모두 치환한 전체 문구 (등록 템플릿과 한 글자라도 다르면 실패)
 //   문구는 항상 templates.json 으로 이 도우미가 만든다. 관리자 화면이 보낸 문구는 쓰지 않는다.
+//   #{변경내용} 은 관리자 화면이 보낸 구조화된 값을 검사해 changes.js 가 만든다.
 // ─────────────────────────────────────────────────────────────
 import crypto from 'node:crypto';
 
@@ -38,9 +39,9 @@ export function renderTemplate(template, vars) {
   return template.replace(/#\{([^}]+)\}/g, (m, key) => (key in vars ? String(vars[key]) : m));
 }
 
-// 템플릿 → { text, title }. 쓸 수 있는 값은 강사명뿐
-export function buildMessage(template, { name }) {
-  const data = { 강사명: name };
+// 템플릿 → { text, title }. 쓸 수 있는 값은 강사명과 (검사를 마친) 변경내용뿐
+export function buildMessage(template, { name, changesText = '' }) {
+  const data = { 강사명: name, 변경내용: changesText };
   const values = { ...template.fixed };
   for (const [field, variable] of Object.entries(template.fieldToVar)) values[variable] = data[field];
   return {

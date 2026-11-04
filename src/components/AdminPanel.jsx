@@ -5,6 +5,7 @@ import { API_BASE, parseWorkbook } from '../utils/parseExcel.js';
 import { stripTeacherContacts } from '../utils/sanitizeExcel.js';
 import { diffByTeacher, formatChangeMessage } from '../utils/scheduleDiff.js';
 import { toChangeRecords } from '../utils/changeLog.js';
+import { toNotifyChanges } from '../utils/notifyChanges.js';
 
 const maskPhone = (phone) => `***-****-${phone.slice(-4)}`;
 
@@ -38,15 +39,19 @@ export default function AdminPanel({
   const [uploadMsg, setUploadMsg]   = useState(null);
   const [uploadWarn, setUploadWarn] = useState(null); // 업로드는 됐지만 변경 내역 저장 실패 등
   const [notifyMsg, setNotifyMsg]   = useState(null); // { ok, text, details? }
-  // 업로드 전 변경 미리보기: { file, buf, requestId, items: [{ teacher, phone, changes, message, checked }] }
+  // 업로드 전 변경 미리보기: { file, buf, requestId, items: [{ teacher, phone, changes, notify, message, checked }] }
+  //   notify: 도우미에 보낼 구조화된 변경 값 { changes, moreChanges } (toNotifyChanges)
   const [preview,   setPreview]     = useState(null);
   // 발송 도우미 상태 (helper 모드): null = 확인 중, { connected: false } = 꺼짐, { connected: true, ok, mode, ... } = /health 응답
   const [helper,    setHelper]      = useState(null);
+  // 도우미가 만든 강사별 실제 발송 문구 (/preview): null = 확인 전 · 중, { error } | { buttons, byTeacher: { 이름: { text } | { code, result } } }
+  const [sendTexts, setSendTexts]   = useState(null);
   // TIS 로 넘길 알림 대상 (tis 모드): { uploadedAt, items: [{ teacher, phone, changeCount, checked }] }
   //   전화번호가 들어 있으므로 이 탭의 메모리에만 둔다 (저장소 · 서버로 보내지 않음)
   const [tisTargets, setTisTargets] = useState(null);
   const [showTis,    setShowTis]    = useState(false);
   const fileRef = useRef(null);
+  const helperCheckSeq = useRef(0);
 
   // 기업교육팀 (과정별 개별 파일)
   const [corpFiles,  setCorpFiles]  = useState(null); // null = 로딩 전
@@ -107,12 +112,13 @@ export default function AdminPanel({
       const newData = parseWorkbook(buf, file.name, { log: false });
       const items = diffByTeacher(currentData, newData).map(t => ({
         ...t,
+        notify:  toNotifyChanges(t.changes),
         message: formatChangeMessage(t.changes, { vars: { 강사명: t.teacher } }),
         checked: !!t.phone,
       }));
       // requestId: 같은 미리보기에서 보낸 요청은 재전송돼도 한 번만 발송 (도우미의 idempotencyKey)
       setPreview({ file, buf, items, requestId: crypto.randomUUID() });
-      if (NOTIFY_MODE === 'helper') checkHelper();
+      if (NOTIFY_MODE === 'helper') checkHelper(items);
     } catch (err) {
       setUploadErr(`파일을 읽을 수 없습니다: ${err.message}`);
     } finally {
@@ -162,19 +168,51 @@ export default function AdminPanel({
     }
   }
 
-  async function checkHelper() {
+  // 도우미 상태 확인 → 연결되면 번호 있는 강사의 실제 발송 문구를 받아 온다
+  //   늦게 온 이전 확인 결과가 새 미리보기를 덮어쓰지 않게 순번으로 거른다
+  async function checkHelper(items) {
+    const seq = ++helperCheckSeq.current;
     setHelper(null);
+    setSendTexts(null);
+    let health;
     try {
       // 도우미가 공인 IP 를 조회하느라(최대 3초) 늦을 수 있어 여유를 둔다
       const res = await fetch(`${NOTIFY_HELPER_URL}/health`, { cache: 'no-store', signal: AbortSignal.timeout(8000) });
-      setHelper({ connected: true, ...(await res.json()) });
+      health = { connected: true, ...(await res.json()) };
     } catch {
-      setHelper({ connected: false });
+      health = { connected: false };
+    }
+    if (seq !== helperCheckSeq.current) return;
+    setHelper(health);
+    if (!health.connected) return;
+    const texts = await fetchSendTexts(items);
+    if (seq === helperCheckSeq.current) setSendTexts(texts);
+  }
+
+  // 도우미 /preview: 강사별로 실제 발송될 문구 (보내지 않음). 번호는 보내지 않는다
+  async function fetchSendTexts(items) {
+    const targets = items.filter(t => t.phone);
+    if (targets.length === 0) return { byTeacher: {} };
+    try {
+      const res = await fetch(`${NOTIFY_HELPER_URL}/preview`, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ recipients: targets.map(t => ({ name: t.teacher, ...t.notify })) }),
+        signal:  AbortSignal.timeout(8000),
+      });
+      const json = await res.json().catch(() => null);
+      if (!res.ok || !json?.ok) {
+        return { error: res.status === 404 ? '발송 도우미가 문구 미리보기를 지원하지 않습니다. 도우미를 최신 버전으로 바꿔 주세요' : (json?.error || `HTTP ${res.status}`) };
+      }
+      // 결과는 보낸 순서대로 온다 (이름 형식 오류면 name 이 바뀌므로 순서로 맞춘다)
+      return { buttons: json.buttons || [], byTeacher: Object.fromEntries(targets.map((t, i) => [t.teacher, json.results[i] || {}])) };
+    } catch {
+      return { error: '발송 도우미에서 문구를 받아 오지 못했습니다' };
     }
   }
 
   // 발송 도우미에 알림 발송 요청. 실패해도 throw 하지 않고 안내 문구만 반환 (업로드는 이미 끝난 상태)
-  //   보내는 것은 requestId 와 강사 이름 · 번호뿐. 문구는 도우미가 등록 템플릿으로 만든다
+  //   보내는 것은 requestId 와 강사 이름 · 번호 · 구조화된 변경 값뿐. 문구는 도우미가 등록 템플릿으로 만든다
   //   응답: { ok, mode, prepared, sent, failed, results: [{ name, phone, to?, status, code, result }] }
   async function sendNotify(recipients, requestId) {
     let res = null;
@@ -212,9 +250,9 @@ export default function AdminPanel({
 
   async function handleConfirmUpload(withNotify) {
     const { file, buf, items, requestId } = preview;
-    // 도우미에는 이름과 번호만 보낸다 (변경 내용 · 문구는 보내지 않음)
+    // 도우미에는 이름 · 번호 · 구조화된 변경 값만 보낸다 (문구는 보내지 않음)
     const helperRecipients = withNotify && NOTIFY_MODE === 'helper'
-      ? items.filter(t => t.checked && t.phone).map(t => ({ name: t.teacher, phone: t.phone }))
+      ? items.filter(t => t.checked && t.phone).map(t => ({ name: t.teacher, phone: t.phone, ...t.notify }))
       : [];
     setPreview(null);
     setBusy(true);
@@ -643,7 +681,8 @@ export default function AdminPanel({
         <PreviewModal
           preview={preview}
           helper={helper}
-          onRecheckHelper={checkHelper}
+          sendTexts={sendTexts}
+          onRecheckHelper={() => checkHelper(preview.items)}
           onToggle={togglePreviewTeacher}
           onCancel={() => setPreview(null)}
           onConfirm={handleConfirmUpload}
@@ -762,17 +801,50 @@ function NotifyResults({ results }) {
   );
 }
 
-function PreviewModal({ preview, helper, onRecheckHelper, onToggle, onCancel, onConfirm }) {
+// 도우미가 만든 실제 발송 문구 (카카오톡에 가는 그대로)
+function SendText({ helper, sendTexts, result }) {
+  let body;
+  if (!helper?.connected) {
+    body = <p className="text-gray-400">발송 도우미가 연결되면 실제 발송 문구가 표시됩니다</p>;
+  } else if (!sendTexts) {
+    body = <p className="text-gray-400">발송 문구 불러오는 중...</p>;
+  } else if (sendTexts.error) {
+    body = <p className="text-red-600">{sendTexts.error}</p>;
+  } else if (result?.text) {
+    body = (
+      <>
+        <pre className="whitespace-pre-wrap break-words font-sans text-gray-800">{result.text}</pre>
+        {sendTexts.buttons.map((b, i) => (
+          <span key={i} className="inline-block mt-1 mr-1 px-2 py-0.5 border border-yellow-300 rounded bg-white text-gray-700">{b}</span>
+        ))}
+      </>
+    );
+  } else {
+    body = (
+      <p className="text-red-600">
+        보내지 않음: {result?.result || '문구를 만들 수 없습니다'}{result?.code ? ` (${result.code})` : ''}
+      </p>
+    );
+  }
+  return (
+    <div className="text-[11px] leading-relaxed bg-yellow-50 border border-yellow-200 rounded p-2">
+      <p className="text-[10px] font-bold text-yellow-800 mb-1">카카오톡 발송 문구</p>
+      {body}
+    </div>
+  );
+}
+
+function PreviewModal({ preview, helper, sendTexts, onRecheckHelper, onToggle, onCancel, onConfirm }) {
   const { file, items } = preview;
   const isHelper = NOTIFY_MODE === 'helper';
   const withPhoneCount = items.filter(t => t.phone).length;
-  // helper 모드: 여기서 고른 강사에게 도우미가 바로 발송
+  // helper 모드: 여기서 고른 강사에게 도우미가 바로 발송 (실제 발송 문구를 받아 온 뒤에만)
   // tis 모드:    업로드 후 "알림 대상" 화면에서 고른다 (여기는 확인만)
   const checkedCount = items.filter(t => t.checked).length;
   const maxRecipients = helper?.maxRecipients ?? 50;
   const tooMany = isHelper && checkedCount > maxRecipients;
   const canNotify = isHelper
-    ? checkedCount > 0 && !tooMany && !!helper?.connected && !!helper.ok
+    ? checkedCount > 0 && !tooMany && !!helper?.connected && !!helper.ok && !!sendTexts && !sendTexts.error
     : withPhoneCount > 0;
 
   return (
@@ -826,6 +898,9 @@ function PreviewModal({ preview, helper, onRecheckHelper, onToggle, onCancel, on
                   <pre className="text-[11px] leading-relaxed text-gray-600 bg-gray-50 rounded p-2 whitespace-pre-wrap break-words font-sans">
                     {t.message}
                   </pre>
+                  {isHelper && t.phone && (
+                    <SendText helper={helper} sendTexts={sendTexts} result={sendTexts?.byTeacher?.[t.teacher]} />
+                  )}
                 </div>
               ))}
             </div>
@@ -835,7 +910,10 @@ function PreviewModal({ preview, helper, onRecheckHelper, onToggle, onCancel, on
         {items.length > 0 && isHelper && (
           <div className="space-y-1">
             <p className="text-xs text-gray-500">
-              카카오톡에는 변경 내용 없이 등록된 고정 문구와 [시간표 확인] 버튼이 갑니다. 강사는 사이트의 강사별 탭에서 바뀐 수업을 확인합니다.
+              카카오톡에는 강사마다 노란 칸의 문구가 [시간표 확인] 버튼과 함께 갑니다.
+              문구는 발송 도우미가 등록 템플릿{helper?.template ? `(${helper.template})` : ''}으로 만듭니다.
+              {helper?.usesChanges && ' 변경 내용은 최대 5줄이고, 오늘 이전 날짜는 빠집니다.'}
+              {' '}강사는 사이트의 강사별 탭에서 자세한 변경을 확인합니다.
             </p>
             <HelperStatus helper={helper} onRecheck={onRecheckHelper} />
             {tooMany && (

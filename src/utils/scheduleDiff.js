@@ -1,8 +1,8 @@
 // ─────────────────────────────────────────────────────────────
 // 시간표 변경 감지 (강사별)
 //   diffByTeacher(oldData, newData)  parseWorkbook 결과 두 개 → 강사별 추가/삭제/변경 수업
-//   formatChangeMessage(changes)     알림톡 #{변경내용} 에 넣을 문자열
-//   발송은 하지 않는다 (다음 단계).
+//   formatChangeMessage(changes)     자세한 변경 목록 문자열 (업로드 미리보기 · diff-test 용)
+//   실제 알림톡 #{변경내용} 은 발송 도우미가 만든다 (src/utils/notifyChanges.js → notify-helper/changes.js)
 // ─────────────────────────────────────────────────────────────
 
 const DAY_NAMES = ['일', '월', '화', '수', '목', '금', '토'];

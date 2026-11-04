@@ -23,8 +23,10 @@ export const ALLOWED_BIZGO_HOSTS = ['mars.ibapi.kr', 'sandbox-mars.ibapi.kr'];
 export const MODE_LABEL = { 'dry-run': 'DRY-RUN', sandbox: '샌드박스', production: '운영' };
 export const KILL_SWITCH_MESSAGE = '발송이 꺼져 있습니다 (NOTIFY_ENABLED=false)';
 
-// 템플릿 변수에 연결할 수 있는 항목. 관리자 화면은 이름과 번호만 보내므로 강사명 하나뿐이다
-export const DATA_FIELDS = ['강사명'];
+// 템플릿 변수에 연결할 수 있는 항목
+//   강사명    관리자 화면이 보낸 이름 (alimtalk.js cleanName 으로 검사)
+//   변경내용  관리자 화면이 보낸 구조화된 변경 값으로 이 도우미가 만든 문구 (changes.js)
+export const DATA_FIELDS = ['강사명', '변경내용'];
 
 const API_KEY_PREFIX = 'mars_ak_';
 const DEFAULT_ORIGINS = ['http://localhost:5173', 'http://127.0.0.1:5173', 'https://pycode1094.github.io'];
@@ -136,6 +138,8 @@ function loadTemplate(code) {
     template: {
       code, msgType: t.msgType || 'AT', text, title, buttons, fieldToVar, fixed,
       testOnly: t.testOnly === true,
+      // #{변경내용} 이 있는 템플릿만 관리자 화면이 보낸 changes 를 읽는다
+      usesChanges: '변경내용' in fieldToVar,
     },
     problems, notReady, warnings,
   };

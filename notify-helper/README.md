@@ -4,11 +4,12 @@
 
 ```
 관리자 화면 (브라우저) ──POST /notify──▶ 발송 도우미 (127.0.0.1:5599) ──▶ 비즈고 API ──▶ 카카오 알림톡
-     이름 · 번호만 보냄                   문구는 등록 템플릿으로 여기서 만듦
+  이름 · 번호 · 구조화된 변경 값          검사한 뒤 등록 템플릿으로 문구를 여기서 만듦
 ```
 
-- 알림톡에는 변경 내용이 들어가지 않습니다. 등록한 고정 문구와 [시간표 확인] 버튼만 갑니다. 무엇이 바뀌었는지는 강사가 사이트의 강사별 탭("최근 변경")에서 확인합니다.
-- Node 20 이상만 있으면 됩니다. 외부 npm 패키지를 쓰지 않습니다.
+- 알림톡에는 등록 템플릿(`01000_2_21`) 문구와 바뀐 수업 요약(최대 5줄), [시간표 확인] 버튼이 갑니다. 자세한 내용은 강사가 사이트의 강사별 탭("최근 변경")에서 확인합니다.
+- 관리자 화면은 보내기 전에 `/preview`로 강사별 **실제 발송 문구**를 받아 미리보기 창에 보여줍니다.
+- Node 20 이상만 있으면 됩니다. 외부 npm 패키지를 쓰지 않습니다. 테스트는 `npm test`입니다.
 
 ## ⚠ 비즈고에 등록하는 IP는 "이 도우미가 도는 PC의 공인 IP"입니다
 
@@ -56,27 +57,55 @@ powershell -ExecutionPolicy Bypass -File scripts\install-notify-helper.ps1
 
 | 템플릿 코드 | 용도 |
 |---|---|
-| `01000_2_20` | 강사용 시간표 변경 안내. 비즈고 등록본, **승인됨**. 평소에 쓰는 템플릿 |
+| `01000_2_21` | 강사용 시간표 변경 안내 v2(변경 내용 포함). 비즈고 등록본, **승인됨**. 평소에 쓰는 템플릿 |
+| `01000_2_20` | 강사용 시간표 변경 안내 v1(변경 내용 없음). 승인됨, **예비**. 이 코드로 바꾸면 변경 값은 무시하고 고정 문구만 보냅니다 |
 | `education_scheduled_v1` | 비즈고 기본 템플릿(수강생용). 예비 **연동 테스트용**으로만 남겨 둠. `testOnly`라서 `NOTIFY_TEST_PHONE`이 있어야 보냅니다. 쓰려면 본문을 비즈고 콘솔에서 복사해 넣어야 합니다 |
 
-`01000_2_20` 본문 (줄바꿈은 `\n`, 끝 줄바꿈 없음, 강조 제목 없음):
+`01000_2_21` 본문 (줄바꿈은 `\n`, 끝 줄바꿈 없음, 강조 제목 없음):
 
 ```
 안녕하세요 #{이름} 강사님,
-부산인력개발원입니다.
+대한상공회의소 부산인력개발원입니다.
 
-담당하시는 수업의 시간표가 변경되었습니다.
-아래 [시간표 확인] 버튼을 눌러 변경된 일정을 확인해 주세요.
+담당하시는 수업의 시간표가 아래와 같이 변경되었습니다.
+
+#{변경내용}
+
+자세한 일정은 [시간표 확인] 버튼을 눌러 확인해 주세요.
 
 감사합니다.
 ```
 
-- 변수는 `#{이름}` 하나이고, 강사명으로 채웁니다(`variables: { "강사명": "#{이름}" }`).
-- 버튼은 웹링크(WL) "시간표 확인", 모바일 링크 `https://pycode1094.github.io/time-schedule/`입니다. PC 링크는 등록하지 않았으므로 넣지 않습니다.
+- `#{이름}`은 강사명, `#{변경내용}`은 아래 규칙으로 도우미가 만든 문구입니다(`variables: { "강사명": "#{이름}", "변경내용": "#{변경내용}" }`).
+- 버튼은 웹링크(WL) "시간표 확인", 모바일 링크 `https://pycode1094.github.io/time-schedule/`입니다. PC 링크는 넣지 않습니다(등록했다면 버튼에 `"urlPc"`를 같은 값으로 추가).
+- `01000_2_20`(예비) 본문은 `templates.json`에 있습니다. 변수는 `#{이름}` 하나입니다.
 
 > **⚠ 등록된 템플릿과 글자 하나까지 같아야 합니다.** 본문의 띄어쓰기·줄바꿈·문장부호, 강조 제목 유무, 버튼(이름·타입·링크)이 하나라도 다르면 발송에 실패합니다. 비즈고에서 문구를 고쳐 다시 검수받았다면 `templates.json`도 함께 고치세요.
 
-**문구는 항상 이 도우미가 만듭니다.** 관리자 화면은 강사 이름과 번호만 보내고, 그 밖의 필드(문구, 변경내용 등)는 무시합니다. 이름은 한글 2~10자 또는 영문 이름만 받습니다. 줄바꿈이나 띄어쓴 문장이 섞인 이름은 거부해서 `#{이름}`으로 임의 문구를 넣을 수 없게 했습니다.
+**문구는 항상 이 도우미가 만듭니다.** 관리자 화면이 보낸 문구는 쓰지 않습니다. 이름은 한글 2~10자 또는 영문 이름만 받습니다. 줄바꿈이나 띄어쓴 문장이 섞인 이름은 거부해서 `#{이름}`으로 임의 문구를 넣을 수 없게 했습니다.
+
+### `#{변경내용}` 만드는 방식 (`changes.js`)
+
+관리자 화면은 강사별 변경을 **구조화된 값으로만** 보냅니다(자유 문장 없음).
+
+```json
+{ "changes": [{ "date": "2026-11-05", "startPeriod": 3, "endPeriod": 4, "course": "과정명", "room": "(908)자동제어실",
+                "type": "변경", "before": "교과목 · (908)자동제어실", "after": "교과목 · (909)프로그램실3" }],
+  "moreChanges": 0 }
+```
+
+| 단계 | 규칙 |
+|---|---|
+| 형식 검사 | 날짜 `YYYY-MM-DD`(실제 있는 날짜), 교시 1~12 정수(시작 ≤ 끝), 유형 `추가`·`삭제`·`변경`, 강사당 10건까지(나머지는 `moreChanges` 건수만) |
+| 문자열 | 과정명 40자(필수), 강의실 20자, 변경 전·후 요약 40자. 넘으면 거부(관리자 화면이 미리 잘라 보냄) |
+| 위험한 값 | 줄바꿈·탭·제어문자·폭 없는 문자·방향 제어 문자는 공백으로 바꿈. 링크(`http://`, `www.`, `.com` · `.kr` 등, IP 주소)와 `#{ }`가 있으면 거부 |
+| 한 줄 형식 | `▶ 11/05(목) 3~4교시 과정명 · 강의실 [변경]`. 변경 전·후 요약은 검사만 하고 넣지 않음(줄을 짧게) |
+| 합치기 | 같은 날 · 과정 · 강의실 · 유형에서 이어지거나 겹치는 교시는 한 줄로 |
+| 줄 수 · 길이 | 날짜 → 교시 순, 최대 5줄. 넘으면 4줄 + `외 N건`. 오늘 이전 날짜는 뺌. 전체 500자 이내 |
+
+- 한 건이라도 형식이 틀리면 그 강사는 보내지 않고 `INVALID_CHANGES`와 사유를 돌려줍니다(일부만 빠진 문구가 가지 않게).
+- 오늘 이후 변경이 하나도 없으면 `NO_CHANGES`로 보내지 않습니다.
+- 템플릿에 `#{변경내용}`이 없으면(`01000_2_20`) `changes`는 읽지도 않습니다.
 
 ## 설정: `notify-helper/.env`
 
@@ -87,7 +116,7 @@ powershell -ExecutionPolicy Bypass -File scripts\install-notify-helper.ps1
 | `BIZGO_API_KEY` | | 통합키(`mars_ak_`로 시작). 이 파일에서만 읽고, 시작할 때 형식만 검사합니다 |
 | `BIZGO_BASE_URL` | 샌드박스 | `https://sandbox-mars.ibapi.kr/api/comm` 또는 `https://mars.ibapi.kr/api/comm`만. 다른 주소면 시작 거부 |
 | `BIZGO_SENDER_KEY` | | 발신 프로필 키. 샌드박스·운영에서만 필수 |
-| `BIZGO_TEMPLATE_CODE` | | `01000_2_20` 또는 `education_scheduled_v1` |
+| `BIZGO_TEMPLATE_CODE` | | `01000_2_21`(평소), `01000_2_20`(예비), `education_scheduled_v1`(연동 테스트) |
 | `BIZGO_SMS_FROM` | (선택) | 알림톡 실패 시 문자 대체발송 번호(90바이트 이하 SMS, 넘으면 LMS) |
 | `BIZGO_PAYMENT_CODE` | (선택) | 정산용 부서코드 |
 | `EXPECTED_PUBLIC_IPS` | | 비즈고 허용 IP(이 PC의 공인 IP). 쉼표, CIDR. 비우면 비교하지 않고 경고만 |
@@ -107,8 +136,9 @@ powershell -ExecutionPolicy Bypass -File scripts\install-notify-helper.ps1
 **1. DRY-RUN: 비즈고 호출 없이 요청 바디만 확인** (지금 상태)
 ```
 NOTIFY_DRY_RUN=true
-BIZGO_TEMPLATE_CODE=01000_2_20
+BIZGO_TEMPLATE_CODE=01000_2_21
 ```
+미리보기 창의 노란 칸(카카오톡 발송 문구)과 도우미 창의 요청 바디 `text`가 같은지 봅니다.
 
 **2. 샌드박스: 실제 발송·과금 없이 인증·IP·연동만 확인**
 ```
@@ -122,11 +152,12 @@ NOTIFY_TEST_PHONE=(내 번호)
 
 **3. 실제 1건: 내 폰으로만**
 ```
+NOTIFY_DRY_RUN=false
 BIZGO_BASE_URL=https://mars.ibapi.kr/api/comm
-BIZGO_TEMPLATE_CODE=01000_2_20
+BIZGO_TEMPLATE_CODE=01000_2_21
 NOTIFY_TEST_PHONE=(내 번호)          ← 반드시 유지
 ```
-미리보기에서 강사 1명만 체크하고 보냅니다. 누구에게 보내는 요청이든 내 폰으로만 옵니다. 받은 메시지의 문구와 버튼이 등록 내용과 같은지 확인하세요. 확인이 끝나면 `NOTIFY_TEST_PHONE`을 비우고 `NOTIFY_DRY_RUN=true`로 되돌립니다.
+미리보기에서 강사 1명만 체크하고 보냅니다. 누구에게 보내는 요청이든 내 폰으로만 옵니다(문구의 강사 이름 · 변경 내용은 체크한 강사 것). 받은 메시지의 문구와 버튼이 미리보기 노란 칸과 같은지 확인하세요. 확인이 끝나면 `NOTIFY_TEST_PHONE`을 비우고 `NOTIFY_DRY_RUN=true`로 되돌립니다.
 
 **4. 운영**
 ```
@@ -143,8 +174,10 @@ NOTIFY_TEST_PHONE=                   ← 비우기
 | 바인딩 | `127.0.0.1:5599`에만 |
 | Host 헤더 | `127.0.0.1:5599` / `localhost:5599`만(DNS 리바인딩 방지) |
 | Origin | `ALLOWED_ORIGINS`와 정확히 같을 때만. Chrome Private Network Access 사전 요청에는 `Access-Control-Allow-Private-Network: true`로 응답 |
-| 요청 형식 | POST는 `Content-Type: application/json`만, 바디 64KB까지, `requestId` 필수 |
-| 문구 | 등록 템플릿으로 도우미가 생성. 클라이언트가 보낸 문구·변경내용은 무시 |
+| 요청 형식 | POST는 `Content-Type: application/json`만, 바디 256KB까지(50명 × 변경 10건), `/notify`는 `requestId` 필수 |
+| 문구 | 등록 템플릿으로 도우미가 생성. 클라이언트가 보낸 문구는 무시 |
+| 변경내용 | 구조화된 값만 받아 형식 · 길이 검사, 링크 · `#{ }` 거부, 제어문자 제거 후 정해진 형식으로 생성(위 표) |
+| 미리보기 | `/preview`는 문구만 돌려줌. 번호를 받지 않고, 비즈고를 호출하지 않고, 기록하지 않음. 한 번에 100명까지 |
 | API 키 | `.env`에서만 읽음. 콘솔·로그·응답·에러에 키와 Authorization 헤더가 나오지 않음(에러 문구 속 `mars_ak_…`도 가림) |
 | 비즈고 호출 | `BIZGO_BASE_URL`은 비즈고 두 주소만, 리다이렉트를 따라가지 않음, 타임아웃 10초 |
 | 재전송 | 같은 `requestId`는 한 번만 처리(409). 강사별 `idempotencyKey`로 비즈고도 중복을 막음 |
@@ -161,7 +194,7 @@ NOTIFY_TEST_PHONE=                   ← 비우기
 {"at":"…","mode":"production","requestId":"…","template":"01000_2_20","name":"홍**","phone4":"1234","status":"sent","code":"A000","result":"Success","called":true,"msgKey":"…"}
 ```
 
-- 이름은 첫 글자와 `**`, 번호는 뒤 4자리만 남깁니다. 문구는 남기지 않습니다(고정 문구이므로 템플릿 코드로 충분).
+- 이름은 첫 글자와 `**`, 번호는 뒤 4자리만 남깁니다. 문구와 변경 내용은 남기지 않습니다(템플릿 코드만).
 - `NOTIFY_TEST_PHONE`을 쓰면 실제로 받은 번호의 뒤 4자리를 `to4`에 남깁니다.
 - 시간당·하루 한도는 이 로그로 셉니다(DRY-RUN 기록은 세지 않음).
 
@@ -169,16 +202,23 @@ NOTIFY_TEST_PHONE=                   ← 비우기
 
 `GET /health`
 ```json
-{ "ok": true, "enabled": true, "mode": "dry-run", "template": "01000_2_20",
+{ "ok": true, "enabled": true, "mode": "dry-run", "template": "01000_2_21", "usesChanges": true,
   "apiKey": "ok", "senderKey": true, "ipStatus": "ok", "publicIp": "x.x.x.x",
   "testPhone": null, "maxRecipients": 50,
-  "limits": { "maxRequestsPerHour": 3, "requestsLastHour": 0, "maxSendsPerDay": 200, "sentToday": 0, … },
+  "limits": { "maxRequestsPerHour": 5, "requestsLastHour": 0, "maxSendsPerDay": 200, "sentToday": 0, … },
   "problems": [], "warnings": [] }
 ```
 - `apiKey`는 `ok` / `missing` / `invalid`(값은 내보내지 않음), `ipStatus`는 `ok` / `mismatch` / `unknown`입니다.
 - `problems`가 지금 발송을 막는 사유입니다.
 
-`POST /notify` 요청 바디는 `{ "requestId": "uuid", "recipients": [{ "name": "홍길동", "phone": "010…" }] }`입니다. 응답은 다음과 같습니다.
+`POST /preview` 요청 바디는 `{ "recipients": [{ "name": "홍길동", "changes": […], "moreChanges": 0 }] }`입니다(번호 없음). 보내지 않고 문구만 돌려줍니다.
+```json
+{ "ok": true, "template": "01000_2_21", "usesChanges": true, "buttons": ["시간표 확인"], "results": [
+  { "name": "홍길동", "text": "안녕하세요 홍길동 강사님,\n…" },
+  { "name": "김철수", "code": "INVALID_CHANGES", "result": "변경 내용 오류: 변경 1번째: 과정명에 링크(URL)를 넣을 수 없습니다" } ] }
+```
+
+`POST /notify` 요청 바디는 `{ "requestId": "uuid", "recipients": [{ "name": "홍길동", "phone": "010…", "changes": […], "moreChanges": 0 }] }`입니다. 응답은 다음과 같습니다.
 ```json
 { "ok": true, "mode": "sandbox", "sent": 1, "failed": 1, "results": [
   { "name": "홍길동", "phone": "***-****-1234", "status": "sent",   "code": "A000", "result": "Success" },
@@ -195,6 +235,8 @@ NOTIFY_TEST_PHONE=                   ← 비우기
 | "IP 불일치" / "비즈고 허용 IP에 없습니다" | 표시된 공인 IP를 비즈고 연동관리에 등록하고 `EXPECTED_PUBLIC_IPS`에도 추가 |
 | 인증 오류(A001, A002) | API 키를 다시 복사해 `.env`에 넣기, 허용 IP 확인 |
 | 템플릿 불일치 오류 | `templates.json`의 본문·버튼과 비즈고 등록 내용 비교, 검수 승인 여부 |
+| `INVALID_CHANGES` / `NO_CHANGES` | 미리보기 노란 칸의 사유 확인. 과정명 · 강의실에 링크나 `{ }`가 있거나, 오늘 이후 변경이 없음 |
+| "문구 미리보기를 지원하지 않습니다" | 사이트보다 오래된 도우미. 도우미 폴더를 최신으로 바꾸고 다시 시작 |
 | "허용되지 않은 주소에서의 요청" | 관리자 화면 주소를 `ALLOWED_ORIGINS`에 추가 |
 | "시간당 발송 요청 한도" | 표시된 시각 이후 다시, 또는 `NOTIFY_MAX_REQUESTS_PER_HOUR` 조정 |
 | 시작하자마자 꺼짐 | `logs/start-error.txt` 확인(대개 `BIZGO_BASE_URL`), 포트 5599를 다른 도우미가 쓰는 중 |

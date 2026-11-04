@@ -3,14 +3,18 @@
 //   시간표를 업로드하는 PC 에서 실행한다. 비즈고 API 는 연동관리에 등록한 IP 에서만
 //   호출할 수 있어서 GitHub Pages · Cloudflare Worker 가 아니라 이 PC 에서 직접 보낸다.
 //
-//   GET  /health  → { ok, enabled, mode, apiKey, senderKey, ipStatus, publicIp, problems, ... }
-//   POST /notify  ← { requestId, recipients: [{ name, phone }] }   (다른 필드는 무시)
-//                 → 강사별 성공/실패와 사유
+//   GET  /health   → { ok, enabled, mode, apiKey, senderKey, ipStatus, publicIp, problems, ... }
+//   POST /preview  ← { recipients: [{ name, changes, moreChanges }] }   (번호는 받지 않음)
+//                  → 강사별 실제 발송될 문구 (보내지 않고 기록도 안 함)
+//   POST /notify   ← { requestId, recipients: [{ name, phone, changes, moreChanges }] }
+//                  → 강사별 성공/실패와 사유
+//     changes 형식은 changes.js 참고. 템플릿에 #{변경내용} 이 없으면 changes 는 읽지 않는다
 //
 //   보안
 //   - 127.0.0.1 에만 바인딩, Host 는 127.0.0.1:5599 / localhost:5599 만 (DNS 리바인딩 방지)
-//   - Origin 은 ALLOWED_ORIGINS 와 정확히 같을 때만, POST 는 application/json · 64KB 까지
-//   - 문구는 templates.json 으로 이 도우미가 만든다 (관리자 화면이 보낸 문구 · 변경내용은 무시)
+//   - Origin 은 ALLOWED_ORIGINS 와 정확히 같을 때만, POST 는 application/json · 256KB 까지
+//   - 문구는 templates.json 으로 이 도우미가 만든다. 관리자 화면이 보낸 문구는 쓰지 않고,
+//     #{변경내용} 도 구조화된 값을 검사해 정해진 형식으로 만든다 (changes.js)
 //   - API 키는 .env 에서만 읽고, 콘솔 · 로그 · 응답 · 에러 어디에도 내보내지 않는다
 //   - 남용 방지: 요청당 인원, 시간당 요청, 하루 건수, 같은 번호 재발송 간격, 같은 요청 재전송
 //   - NOTIFY_ENABLED=false 이면 모든 발송 거부
@@ -27,12 +31,15 @@ import {
   idempotencyKey, charLength, scrub, MESSAGE_MAX_LENGTH,
 } from './alimtalk.js';
 import { createIpChecker, ipGuidance } from './publicIp.js';
-import { createGuard, maskName } from './guard.js';
+import { createGuard, maskName, localDate } from './guard.js';
+import { parseChanges, buildChangesText } from './changes.js';
 
 export const HOST = '127.0.0.1';
 export const PORT = 5599;
 const LOCAL_HOSTS = [`127.0.0.1:${PORT}`, `localhost:${PORT}`];
-const MAX_BODY_BYTES = 64 * 1024;
+// 50명 × 강사당 변경 10건이 들어가도록 (이름 · 번호만 보내던 때는 64KB)
+const MAX_BODY_BYTES = 256 * 1024;
+const PREVIEW_MAX_RECIPIENTS = 100;
 const DEFAULT_LOG_DIR = path.join(HELPER_DIR, 'logs');
 
 function sendJson(res, status, obj) {
@@ -58,6 +65,40 @@ function readBody(req) {
     req.on('end', () => { if (!done) { done = true; resolve(Buffer.concat(chunks).toString('utf8')); } });
     req.on('error', (e) => { if (!done) { done = true; reject(e); } });
   });
+}
+
+// POST 바디: application/json 만, MAX_BODY_BYTES 까지 → { payload }. 틀리면 응답을 보내고 null
+async function readJson(req, res) {
+  const contentType = String(req.headers['content-type'] || '').split(';')[0].trim().toLowerCase();
+  if (contentType !== 'application/json') {
+    sendJson(res, 415, { ok: false, error: 'Content-Type 은 application/json 이어야 합니다' });
+    return null;
+  }
+  try {
+    return { payload: JSON.parse(await readBody(req)) };
+  } catch (e) {
+    sendJson(res, e.status === 413 ? 413 : 400, {
+      ok: false, error: e.status === 413 ? `요청이 너무 큽니다 (최대 ${MAX_BODY_BYTES / 1024}KB)` : 'JSON 형식이 아닙니다',
+    });
+    return null;
+  }
+}
+
+// 강사 1명의 문구 → { message } | { skip: { code, result } }
+//   템플릿에 #{변경내용} 이 있을 때만 changes · moreChanges 를 읽는다 (01000_2_20 은 무시)
+function prepareMessage(template, name, r, today) {
+  let changesText = '';
+  if (template.usesChanges) {
+    const parsed = parseChanges(r?.changes, r?.moreChanges);
+    if (parsed.error) return { skip: { code: 'INVALID_CHANGES', result: `변경 내용 오류: ${parsed.error}` } };
+    changesText = buildChangesText(parsed.changes, { today, moreChanges: parsed.moreChanges });
+    if (!changesText) return { skip: { code: 'NO_CHANGES', result: '오늘 이후 변경 내용이 없어 보내지 않습니다' } };
+  }
+  const message = buildMessage(template, { name, changesText });
+  if (charLength(message.text) > MESSAGE_MAX_LENGTH) {
+    return { skip: { code: 'TOO_LONG', result: `알림톡 문구가 ${MESSAGE_MAX_LENGTH}자를 넘습니다` } };
+  }
+  return { message };
 }
 
 const hhmm = (ms) => {
@@ -100,6 +141,7 @@ export function createHandler({
       mode:        cfg.mode,
       modeLabel:   MODE_LABEL[cfg.mode],
       template:    cfg.templateCode,
+      usesChanges: !!cfg.template?.usesChanges, // 문구에 #{변경내용} 이 들어가는지
       apiKey:      cfg.apiKeyStatus,           // ok | missing | invalid (값은 내보내지 않음)
       senderKey:   !!cfg.senderKey,
       ipStatus:    ip.status,                  // ok | mismatch | unknown
@@ -117,22 +159,42 @@ export function createHandler({
     };
   }
 
+  // 미리보기: 강사별로 실제 발송될 문구. 보내지 않고 기록도 남기지 않는다 (번호는 받지 않음)
+  //   문구 확인만 하므로 킬스위치 · IP · 한도와 상관없이 동작한다
+  async function handlePreview(req, res, cfg) {
+    const body = await readJson(req, res);
+    if (!body) return;
+    if (!cfg.template) {
+      return sendJson(res, 503, { ok: false, error: '템플릿 설정을 읽을 수 없습니다', problems: cfg.problems });
+    }
+    const list = body.payload?.recipients;
+    if (!Array.isArray(list) || list.length === 0) return sendJson(res, 400, { ok: false, error: 'recipients 가 비어 있습니다' });
+    if (list.length > PREVIEW_MAX_RECIPIENTS) {
+      return sendJson(res, 400, { ok: false, error: `미리보기는 한 번에 ${PREVIEW_MAX_RECIPIENTS}명까지입니다 (요청 ${list.length}명)` });
+    }
+    const today = localDate();
+    const results = list.map((r, i) => {
+      const name = cleanName(r?.name);
+      if (!name) return { name: `(이름 오류 ${i + 1})`, code: 'INVALID_NAME', result: '이름 형식이 올바르지 않습니다 (한글 2~10자 또는 영문 이름만)' };
+      const m = prepareMessage(cfg.template, name, r, today);
+      return m.skip ? { name, ...m.skip } : { name, text: m.message.text };
+    });
+    sendJson(res, 200, {
+      ok:          true,
+      template:    cfg.templateCode,
+      usesChanges: cfg.template.usesChanges,
+      buttons:     cfg.template.buttons.map(b => b.name),
+      results,
+    });
+  }
+
   async function handleNotify(req, res, cfg) {
     // 킬스위치는 가장 먼저 (DRY-RUN 포함)
     if (!cfg.enabled) return sendJson(res, 503, { ok: false, error: KILL_SWITCH_MESSAGE, problems: [KILL_SWITCH_MESSAGE] });
 
-    const contentType = String(req.headers['content-type'] || '').split(';')[0].trim().toLowerCase();
-    if (contentType !== 'application/json') {
-      return sendJson(res, 415, { ok: false, error: 'Content-Type 은 application/json 이어야 합니다' });
-    }
-    let payload;
-    try {
-      payload = JSON.parse(await readBody(req));
-    } catch (e) {
-      return sendJson(res, e.status === 413 ? 413 : 400, {
-        ok: false, error: e.status === 413 ? `요청이 너무 큽니다 (최대 ${MAX_BODY_BYTES / 1024}KB)` : 'JSON 형식이 아닙니다',
-      });
-    }
+    const body = await readJson(req, res);
+    if (!body) return;
+    const { payload } = body;
 
     const requestId = payload?.requestId;
     if (typeof requestId !== 'string' || !/^[A-Za-z0-9-]{8,64}$/.test(requestId)) {
@@ -157,15 +219,17 @@ export function createHandler({
       return sendJson(res, 503, { ok: false, error: '지금은 발송할 수 없습니다', problems: blocking, ipStatus: ip.status, publicIp: ip.ip });
     }
 
-    // 수신자 검사: 이름 · 번호 형식, 같은 요청 안 중복, 같은 번호 재발송 간격 (틀린 강사만 제외)
-    //   관리자 화면이 보낸 name, phone 외의 필드(text, changes 등)는 읽지 않는다
+    // 수신자 검사: 이름 · 번호 형식, 같은 요청 안 중복, 같은 번호 재발송 간격, 변경 내용 (틀린 강사만 제외)
+    //   관리자 화면이 보낸 name, phone, changes, moreChanges 외의 필드(text 등)는 읽지 않는다
     const cooldownMs = cfg.limits.phoneCooldownMin * 60 * 1000;
+    const today = localDate(new Date(now));
     const phonesInRequest = new Set();
     const plan = list.map((r, i) => {
       const name  = cleanName(r?.name);
       const phone = normalizePhone(r?.phone);
       const shown = { name: name || `(이름 오류 ${i + 1})`, phone: maskPhone(phone) };
       let skip = null;
+      let message = null;
       if (!name) {
         skip = { code: 'INVALID_NAME', result: '이름 형식이 올바르지 않습니다 (한글 2~10자 또는 영문 이름만)' };
       } else if (!isMobile(phone)) {
@@ -175,9 +239,11 @@ export function createHandler({
       } else if (!dryRun && guard.cooldownLeft(phone, cooldownMs, now) > 0) {
         const min = Math.ceil(guard.cooldownLeft(phone, cooldownMs, now) / 60000);
         skip = { code: 'COOLDOWN', result: `${cfg.limits.phoneCooldownMin}분 안에 같은 번호로 보낸 적이 있습니다 (${min}분 후 가능)` };
+      } else {
+        ({ skip = null, message = null } = prepareMessage(cfg.template, name, r, today));
       }
       if (isMobile(phone)) phonesInRequest.add(phone);
-      return { name, phone, shown, skip };
+      return { name, phone, shown, skip, message };
     });
     const sendable = plan.filter(p => !p.skip).length;
 
@@ -211,11 +277,8 @@ export function createHandler({
       if (p.skip) {
         outcome = { status: 'failed', ...p.skip };
       } else {
-        const message = buildMessage(cfg.template, { name: p.name });
-        const body = buildBody(cfg, message, to, idempotencyKey(requestId, p.name, p.phone));
-        if (charLength(message.text) > MESSAGE_MAX_LENGTH) {
-          outcome = { status: 'failed', code: 'TOO_LONG', result: `알림톡 문구가 ${MESSAGE_MAX_LENGTH}자를 넘습니다` };
-        } else if (dryRun) {
+        const body = buildBody(cfg, p.message, to, idempotencyKey(requestId, p.name, p.phone));
+        if (dryRun) {
           const masked = maskBody(body);
           previews.push({ name: p.name, body: masked });
           logger.log(`── ${p.name} 요청 바디 (DRY-RUN, 발송 안 함) ──\n${JSON.stringify(masked, null, 2)}`);
@@ -325,6 +388,10 @@ export function createHandler({
       return res.end();
     }
     if (req.method === 'GET' && pathname === '/health') return sendJson(res, 200, await health(cfg));
+    if (req.method === 'POST' && pathname === '/preview') {
+      if (!allowed) return sendJson(res, 403, { ok: false, error: '허용된 관리자 화면에서만 미리 볼 수 있습니다' });
+      return handlePreview(req, res, cfg);
+    }
     if (req.method === 'POST' && pathname === '/notify') {
       if (!allowed) return sendJson(res, 403, { ok: false, error: '허용된 관리자 화면에서만 발송할 수 있습니다' });
       return handleNotify(req, res, cfg);
