@@ -30,7 +30,8 @@
         {
           "type": "WL",
           "name": "시간표 확인",
-          "urlMobile": "https://pycode1094.github.io/time-schedule/"
+          "urlMobile": "https://pycode1094.github.io/time-schedule/",
+          "urlPc": "https://pycode1094.github.io/time-schedule/"
         }
       ],
       "variables": {
