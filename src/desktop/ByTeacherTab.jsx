@@ -223,7 +223,7 @@ export default function ByTeacherTab({ courses, teachers, schedule, changeLog })
             })}
           </select>
 
-          <span className="px-2 sm:px-3 py-1.5 text-xs sm:text-sm font-medium text-gray-500 bg-gray-50 border border-gray-200 rounded-lg">
+          <span className="px-2 sm:px-3 py-1.5 text-xs sm:text-sm font-medium text-[#5C6573] bg-gray-50 border border-gray-200 rounded-lg">
             {Math.ceil(weekMonday.getDate() / 7)}주차
           </span>
 
@@ -241,7 +241,7 @@ export default function ByTeacherTab({ courses, teachers, schedule, changeLog })
       </div>
 
       {!urlTeacherFound && (
-        <p className="px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs text-gray-500">
+        <p className="px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs text-[#5C6573]">
           주소에 있는 강사 &lsquo;{urlTeacher}&rsquo;를 시간표에서 찾을 수 없습니다. 목록에서 선택해 주세요.
         </p>
       )}
@@ -322,7 +322,7 @@ export default function ByTeacherTab({ courses, teachers, schedule, changeLog })
                 <tr key={pIdx}>
                   <td className="px-2 py-1.5 text-center bg-gray-50 border-r border-b border-gray-100 align-middle">
                     <div className="font-semibold text-gray-700 text-sm leading-tight">{pIdx + 1}교시</div>
-                    <div className="text-gray-400 text-xs mt-0.5 leading-tight">{time}</div>
+                    <div className="text-[#5C6573] text-xs mt-0.5 leading-tight">{time}</div>
                   </td>
                   {grid.map((daySlots, dIdx) => {
                     const items = daySlots[pIdx];
@@ -334,7 +334,7 @@ export default function ByTeacherTab({ courses, teachers, schedule, changeLog })
                         return (
                           <td key={dIdx} className="border-r border-b border-gray-100 px-1.5 py-1 align-top bg-white outline-2 outline-dashed outline-amber-400 -outline-offset-2">
                             <span className={`text-[11px] font-bold px-1 py-0.5 rounded ${CHANGE_BADGE.removed}`}>삭제됨</span>
-                            <p className="text-[11px] text-gray-400 line-through truncate mt-0.5" title={change.subject}>{change.subject}</p>
+                            <p className="text-[11px] text-[#5C6573] line-through truncate mt-0.5" title={change.subject}>{change.subject}</p>
                           </td>
                         );
                       }
@@ -364,7 +364,7 @@ export default function ByTeacherTab({ courses, teachers, schedule, changeLog })
                               {item.subject}
                             </p>
                             {item.room && (
-                              <p className="text-xs text-gray-400 truncate">{item.room}</p>
+                              <p className="text-xs text-[#5C6573] truncate">{item.room}</p>
                             )}
                           </div>
                         ))}
@@ -377,7 +377,7 @@ export default function ByTeacherTab({ courses, teachers, schedule, changeLog })
           </table>
 
           {stats.totalPeriods === 0 && (
-            <div className="py-10 text-center text-gray-400 text-sm bg-white rounded-b-xl border-t border-gray-100">
+            <div className="py-10 text-center text-[#5C6573] text-sm bg-white rounded-b-xl border-t border-gray-100">
               이 주에는 수업이 없습니다
             </div>
           )}
@@ -387,15 +387,15 @@ export default function ByTeacherTab({ courses, teachers, schedule, changeLog })
         <div className="w-full lg:w-64 lg:flex-shrink-0 grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-1 gap-3">
           {/* 교시 수 */}
           <div className="bg-white rounded-2xl border border-[#E5E8EB] bg-white p-3 sm:p-4">
-            <h3 className="text-xs sm:text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5 sm:mb-2">이번 주 수업</h3>
-            <p className="text-xl sm:text-2xl font-bold text-[#1B64DA]">{stats.totalPeriods}<span className="text-xs sm:text-sm font-normal text-gray-500 ml-1">교시</span></p>
+            <h3 className="text-xs sm:text-xs font-semibold text-[#5C6573] uppercase tracking-wider mb-1.5 sm:mb-2">이번 주 수업</h3>
+            <p className="text-xl sm:text-2xl font-bold text-[#1B64DA]">{stats.totalPeriods}<span className="text-xs sm:text-sm font-normal text-[#5C6573] ml-1">교시</span></p>
           </div>
 
           {/* 담당 과정 — 풀네임 한 줄씩, 길면 ellipsis (title로 전체 보기) */}
           <div className="bg-white rounded-2xl border border-[#E5E8EB] bg-white p-3 sm:p-4">
-            <h3 className="text-xs sm:text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5 sm:mb-2">담당 과정</h3>
+            <h3 className="text-xs sm:text-xs font-semibold text-[#5C6573] uppercase tracking-wider mb-1.5 sm:mb-2">담당 과정</h3>
             {stats.courses.length === 0
-              ? <p className="text-xs sm:text-sm text-gray-400">없음</p>
+              ? <p className="text-xs sm:text-sm text-[#5C6573]">없음</p>
               : <ul className="space-y-1">
                   {stats.courses.map(c => (
                     <li key={c.id} className="flex items-center gap-1.5 min-w-0" title={c.name}>
@@ -413,9 +413,9 @@ export default function ByTeacherTab({ courses, teachers, schedule, changeLog })
 
           {/* 교과목 */}
           <div className="bg-white rounded-2xl border border-[#E5E8EB] bg-white p-3 sm:p-4">
-            <h3 className="text-xs sm:text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5 sm:mb-2">교과목</h3>
+            <h3 className="text-xs sm:text-xs font-semibold text-[#5C6573] uppercase tracking-wider mb-1.5 sm:mb-2">교과목</h3>
             {stats.subjects.length === 0
-              ? <p className="text-xs sm:text-sm text-gray-400">없음</p>
+              ? <p className="text-xs sm:text-sm text-[#5C6573]">없음</p>
               : <div className="space-y-1">
                   {stats.subjects.map(s => (
                     <p key={s} className="text-[13px] text-gray-700 leading-snug">{s}</p>
@@ -507,7 +507,7 @@ function SearchableSelect({ items, value, onChange }) {
           </div>
           <div className="overflow-y-auto flex-1">
             {filtered.length === 0 && (
-              <p className="px-3 py-2 text-sm text-gray-400">검색 결과 없음</p>
+              <p className="px-3 py-2 text-sm text-[#5C6573]">검색 결과 없음</p>
             )}
             {filtered.map(t => (
               <button
@@ -517,7 +517,7 @@ function SearchableSelect({ items, value, onChange }) {
                   ${t.name === value ? 'bg-blue-50 font-semibold text-blue-700' : 'text-gray-700'}`}
               >
                 <span>{t.name}</span>
-                {t.field && <span className="text-xs text-gray-400 ml-2">{t.field}</span>}
+                {t.field && <span className="text-xs text-[#5C6573] ml-2">{t.field}</span>}
               </button>
             ))}
           </div>

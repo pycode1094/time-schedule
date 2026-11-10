@@ -204,7 +204,7 @@ export default function ByCourseTab({ courses, schedule }) {
             })}
           </select>
 
-          <span className="px-2 sm:px-3 py-1.5 text-xs sm:text-sm font-medium text-gray-500 bg-gray-50 border border-gray-200 rounded-lg">
+          <span className="px-2 sm:px-3 py-1.5 text-xs sm:text-sm font-medium text-[#5C6573] bg-gray-50 border border-gray-200 rounded-lg">
             {(() => { const week = Math.ceil(weekMonday.getDate() / 7); return `${week}주차`; })()}
           </span>
 
@@ -306,7 +306,7 @@ function WeeklyTable({ weekDates, schedule, courseId, palette }) {
                 <div className="font-semibold text-gray-700 text-xs sm:text-sm leading-tight">
                   {periodIdx + 1}<span className="hidden sm:inline">교시</span>
                 </div>
-                <div className="text-gray-400 text-[13px] mt-0.5 leading-tight">{time}</div>
+                <div className="text-[#5C6573] text-[13px] mt-0.5 leading-tight">{time}</div>
               </td>
 
               {dayMergeInfo.map((mergeInfo, dayIdx) => (
@@ -322,7 +322,7 @@ function WeeklyTable({ weekDates, schedule, courseId, palette }) {
       </table>
 
       {!hasAnyLesson && (
-        <div className="py-10 text-center text-gray-400 text-sm bg-white rounded-b-xl border-t border-gray-100">
+        <div className="py-10 text-center text-[#5C6573] text-sm bg-white rounded-b-xl border-t border-gray-100">
           이 주에는 수업이 없습니다
         </div>
       )}
@@ -384,7 +384,7 @@ function LessonCell({ info, palette }) {
 
           {/* 강의실 */}
           {lesson.room && (
-            <p className="text-[13px] text-gray-500 flex items-center gap-0.5">
+            <p className="text-[13px] text-[#5C6573] flex items-center gap-0.5">
               <svg className="w-2.5 h-2.5 flex-shrink-0 hidden sm:block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                   d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />

@@ -201,7 +201,7 @@ export default function WeeklyOverviewTab({ courses, schedule }) {
         </div>
 
         {/* 날짜 범위 표시 */}
-        <span className="text-sm text-[#6B7684] ml-1 tabular">
+        <span className="text-sm text-[#5C6573] ml-1 tabular">
           {weekDates[0].slice(5).replace('-', '/')} – {weekDates[4].slice(5).replace('-', '/')}
         </span>
         {showTodayBtn && (
@@ -235,7 +235,7 @@ export default function WeeklyOverviewTab({ courses, schedule }) {
                   <span className="font-semibold">{c.day} {c.period}교시</span>
                   <span className="mx-1">-</span>
                   <span className="font-medium">{c.teacher}</span>
-                  <span className="text-red-400 ml-1">({c.courses.join(' / ')})</span>
+                  <span className="text-red-700 ml-1">({c.courses.join(' / ')})</span>
                 </div>
               ))}
             </div>
@@ -252,7 +252,7 @@ export default function WeeklyOverviewTab({ courses, schedule }) {
                 d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
             </svg>
           </div>
-          <p className="text-base font-medium text-gray-500">이 주에는 수업이 없습니다</p>
+          <p className="text-base font-medium text-[#5C6573]">이 주에는 수업이 없습니다</p>
         </div>
       ) : (
         <div className="space-y-7">
@@ -264,7 +264,7 @@ export default function WeeklyOverviewTab({ courses, schedule }) {
                 <div className="flex items-center gap-2 mb-2.5">
                   <span className={`w-2 h-2 rounded-full ${pal.dot}`} aria-hidden="true" />
                   <span className="text-base font-bold text-[#191F28]">{cat}</span>
-                  <span className="text-sm text-[#6B7684]">{items.length}개 과정</span>
+                  <span className="text-sm text-[#5C6573]">{items.length}개 과정</span>
                 </div>
 
                 {/* 테이블 — 모바일: 가로 스크롤 (min-width로 컬럼폭 보장) */}
@@ -276,7 +276,7 @@ export default function WeeklyOverviewTab({ courses, schedule }) {
                     </colgroup>
                     <thead>
                       <tr>
-                        <th className="bg-[#F7F8FA] text-[#6B7684] px-4 py-3 text-left text-[13px] font-semibold border-b border-[#E5E8EB]">
+                        <th className="bg-[#F7F8FA] text-[#5C6573] px-4 py-3 text-left text-[13px] font-semibold border-b border-[#E5E8EB]">
                           과정
                         </th>
                         {weekDates.map((dateStr, i) => {
@@ -284,7 +284,7 @@ export default function WeeklyOverviewTab({ courses, schedule }) {
                           const isToday = dateStr === today;
                           return (
                             <th key={dateStr}
-                              className={`px-3.5 py-3 text-left font-semibold border-b border-l border-[#E5E8EB] ${isToday ? 'bg-[#EEF4FE] text-[#1B64DA]' : 'bg-[#F7F8FA] text-[#6B7684]'}`}>
+                              className={`px-3.5 py-3 text-left font-semibold border-b border-l border-[#E5E8EB] ${isToday ? 'bg-[#EEF4FE] text-[#1B64DA]' : 'bg-[#F7F8FA] text-[#5C6573]'}`}>
                               <span className={`text-sm font-bold ${isToday ? 'text-[#1B64DA]' : 'text-[#191F28]'}`}>{DAY_LABELS[i]}</span>
                               <span className="text-[13px] ml-1 tabular">{Number(mm)}/{Number(dd)}</span>
                               {isToday && <span className="ml-1.5 align-[1px] text-[11px] font-bold text-white bg-[#1B64DA] rounded-[5px] px-1.5 py-px">오늘</span>}
@@ -301,7 +301,7 @@ export default function WeeklyOverviewTab({ courses, schedule }) {
                               {course.name}
                             </p>
                             {course.manager && (
-                              <p className="text-xs text-[#6B7684] mt-1">담임 {course.manager}</p>
+                              <p className="text-xs text-[#5C6573] mt-1">담임 {course.manager}</p>
                             )}
                           </td>
                           {daySummaries.map((blocks, dIdx) => (
@@ -321,10 +321,10 @@ export default function WeeklyOverviewTab({ courses, schedule }) {
                                         className={`min-w-0 leading-snug px-2 py-1.5 ${isConflict ? 'bg-red-50 rounded-lg ring-1 ring-red-200' : ''}`}
                                         title={`${periodLabel} ${b.subject}${b.teacher ? ' / ' + b.teacher : ''}`}
                                       >
-                                        <div className="text-xs text-[#8B95A1] font-semibold tabular">{periodLabel.replace('-', '–')}</div>
+                                        <div className="text-xs text-[#5C6573] font-semibold tabular">{periodLabel.replace('-', '–')}</div>
                                         <div className="mt-0.5 text-sm font-semibold text-[#191F28] break-keep">{b.subject}</div>
                                         {b.teacher && (
-                                          <div className={`mt-0.5 text-[12.5px] ${isConflict ? 'text-red-600 font-bold' : 'text-[#6B7684]'}`}>
+                                          <div className={`mt-0.5 text-[12.5px] ${isConflict ? 'text-red-600 font-bold' : 'text-[#5C6573]'}`}>
                                             {b.teacher}
                                           </div>
                                         )}

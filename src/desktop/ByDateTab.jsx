@@ -154,15 +154,15 @@ export default function ByDateTab({ courses, schedule }) {
           <div className="bg-white rounded-2xl border border-[#E5E8EB] bg-white px-3 sm:px-5 py-2.5 sm:py-3">
             <div className="flex flex-wrap items-center gap-x-2 sm:gap-x-5 gap-y-1 text-xs sm:text-sm">
               <Stat value={summary.activeCourses} label="개 과정 운영 중" />
-              <span className="text-gray-300 hidden sm:inline">|</span>
+              <span aria-hidden="true" className="text-gray-300 hidden sm:inline">|</span>
               <Stat value={summary.teachers} label="명 강사 투입" />
-              <span className="text-gray-300 hidden sm:inline">|</span>
+              <span aria-hidden="true" className="text-gray-300 hidden sm:inline">|</span>
               <Stat value={summary.rooms.length} label="개 강의실 사용" />
 
               {summary.rooms.length > 0 && (
                 <button
                   onClick={() => setRoomsOpen(v => !v)}
-                  className="sm:ml-2 text-[13px] text-gray-400 hover:text-gray-600 transition-colors flex items-center gap-0.5"
+                  className="sm:ml-2 text-[13px] text-[#5C6573] hover:text-gray-600 transition-colors flex items-center gap-0.5"
                 >
                   강의실 목록
                   <svg className={`w-3 h-3 transition-transform ${roomsOpen ? 'rotate-180' : ''}`}
@@ -210,7 +210,7 @@ export default function ByDateTab({ courses, schedule }) {
             </table>
 
             {visibleRows.length === 0 && (
-              <div className="py-10 text-center text-gray-400 text-sm bg-white border-t border-gray-100">
+              <div className="py-10 text-center text-[#5C6573] text-sm bg-white border-t border-gray-100">
                 표시할 과정이 없습니다
               </div>
             )}
@@ -250,7 +250,7 @@ function CategoryGroup({ cat, items }) {
         <td colSpan={9}
           className={`px-2 sm:px-3 py-1 sm:py-1.5 text-[13px] font-bold tracking-wide ${pal.subject} bg-gray-50 border-b border-gray-200`}>
           {cat}
-          <span className="ml-1 sm:ml-1.5 font-normal text-gray-400">({items.length})</span>
+          <span className="ml-1 sm:ml-1.5 font-normal text-[#5C6573]">({items.length})</span>
         </td>
       </tr>
       {items.map(({ course, slots, hasData }) => (
@@ -316,7 +316,7 @@ function CourseRow({ course, slots, hasData, pal }) {
                 <span className={`text-xs sm:text-[13px] ${pal.info}`}>{m.lesson.teacher}</span>
               )}
               {m.lesson.room && (
-                <span className="text-[13px] text-gray-400 truncate">{m.lesson.room}</span>
+                <span className="text-[13px] text-[#5C6573] truncate">{m.lesson.room}</span>
               )}
             </div>
           </td>
@@ -331,7 +331,7 @@ function Stat({ value, label }) {
   return (
     <span className="text-sm">
       <span className="font-semibold text-blue-600">{value}</span>
-      <span className="text-gray-500 ml-0.5">{label}</span>
+      <span className="text-[#5C6573] ml-0.5">{label}</span>
     </span>
   );
 }
@@ -345,8 +345,8 @@ function EmptyMsg({ text, sub }) {
             d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
         </svg>
       </div>
-      <p className="text-base font-medium text-gray-500">{text}</p>
-      {sub && <p className="text-sm text-gray-400 mt-1">{sub}</p>}
+      <p className="text-base font-medium text-[#5C6573]">{text}</p>
+      {sub && <p className="text-sm text-[#5C6573] mt-1">{sub}</p>}
     </div>
   );
 }

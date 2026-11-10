@@ -50,7 +50,7 @@ export default function ByRoomTab({ courses, schedule, corpData }) {
           </button>
         ))}
         {current?.desc && (
-          <span className="ml-1 text-[13px] text-gray-400 hidden sm:inline">
+          <span className="ml-1 text-[13px] text-[#5C6573] hidden sm:inline">
             {current.desc}
           </span>
         )}

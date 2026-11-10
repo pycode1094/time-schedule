@@ -16,7 +16,7 @@ export default function CorpScheduleTab({ corpData }) {
     return (
       <div className="bg-white border border-gray-200 rounded-xl p-8 text-center space-y-2">
         <p className="text-sm font-medium text-gray-600">기업교육팀 시간표가 없습니다</p>
-        <p className="text-xs text-gray-400">
+        <p className="text-xs text-[#5C6573]">
           관리자 패널에서 기업교육팀 과정별 훈련시간표(.xlsx)를 업로드하세요.
         </p>
       </div>
@@ -123,17 +123,17 @@ function CorpCourseWeekView({ course, schedule }) {
                 {course.name}
               </h3>
             </div>
-            <p className="text-[13px] text-gray-500 mt-1">
+            <p className="text-[13px] text-[#5C6573] mt-1">
               훈련기간: {course.dateRange.start} ~ {course.dateRange.end}
               {course.teachers.length > 0 && (
-                <><span className="mx-1.5 text-gray-300">|</span>강사: {course.teachers.join(', ')}</>
+                <><span aria-hidden="true" className="mx-1.5 text-gray-300">|</span>강사: {course.teachers.join(', ')}</>
               )}
               {course.rooms.length > 0 && (
-                <><span className="mx-1.5 text-gray-300">|</span>강의실: {course.rooms.join(', ')}</>
+                <><span aria-hidden="true" className="mx-1.5 text-gray-300">|</span>강의실: {course.rooms.join(', ')}</>
               )}
             </p>
           </div>
-          <p className="text-xs sm:text-[13px] text-gray-400 flex-shrink-0">{course.fileName}</p>
+          <p className="text-xs sm:text-[13px] text-[#5C6573] flex-shrink-0">{course.fileName}</p>
         </div>
       </div>
 
@@ -157,7 +157,7 @@ function CorpCourseWeekView({ course, schedule }) {
           })}
         </select>
 
-        <span className="px-2 sm:px-3 py-1.5 text-xs sm:text-sm font-medium text-gray-500 bg-gray-50 border border-gray-200 rounded-lg">
+        <span className="px-2 sm:px-3 py-1.5 text-xs sm:text-sm font-medium text-[#5C6573] bg-gray-50 border border-gray-200 rounded-lg">
           {Math.ceil(weekMonday.getDate() / 7)}주차
         </span>
 
@@ -200,7 +200,7 @@ function CorpCourseWeekView({ course, schedule }) {
               <tr key={period}>
                 <td className="px-2 py-1.5 text-center bg-gray-50 border-r border-b border-gray-100 align-middle">
                   <div className="font-semibold text-gray-700 text-sm leading-tight">{period}교시</div>
-                  {time && <div className="text-gray-400 text-xs mt-0.5 leading-tight">{time}</div>}
+                  {time && <div className="text-[#5C6573] text-xs mt-0.5 leading-tight">{time}</div>}
                 </td>
                 {grid.map((daySlots, dIdx) => {
                   const l = daySlots[period];
@@ -213,7 +213,7 @@ function CorpCourseWeekView({ course, schedule }) {
                         {l.subject}
                       </p>
                       {(l.teacher || l.room) && (
-                        <p className="text-xs text-gray-500 truncate">
+                        <p className="text-xs text-[#5C6573] truncate">
                           {[l.teacher, l.room].filter(Boolean).join(' · ')}
                         </p>
                       )}
@@ -226,13 +226,13 @@ function CorpCourseWeekView({ course, schedule }) {
         </table>
 
         {weekLessonCount === 0 && (
-          <div className="py-10 text-center text-gray-400 text-sm bg-white rounded-b-xl border-t border-gray-100">
+          <div className="py-10 text-center text-[#5C6573] text-sm bg-white rounded-b-xl border-t border-gray-100">
             이 주에는 수업이 없습니다
           </div>
         )}
       </div>
 
-      <p className="text-[11px] text-gray-400">
+      <p className="text-[11px] text-[#5C6573]">
         ※ 기업교육팀 과정은 본원 양성과정과 교시 시간이 다릅니다. 위 시간은 해당 과정 시간표 기준입니다.
       </p>
     </div>

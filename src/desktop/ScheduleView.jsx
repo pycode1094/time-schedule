@@ -49,10 +49,10 @@ export default function ScheduleView({ data, changeLog, corpData, onCorpReload, 
         <div className="max-w-[1376px] mx-auto px-8 pt-5">
           <div className="flex items-center gap-5">
             <button type="button" onClick={() => selectTab('weekly')} className="text-left">
-              <p className="text-xs font-semibold text-[#6B7684]">대한상공회의소 부산인력개발원</p>
+              <p className="text-xs font-semibold text-[#5C6573]">대한상공회의소 부산인력개발원</p>
               <h1 className="text-[22px] font-bold text-[#191F28] leading-tight">종합시간표</h1>
             </button>
-            <div className="pl-5 border-l border-[#E5E8EB] text-[13px] leading-relaxed text-[#6B7684] min-w-0">
+            <div className="pl-5 border-l border-[#E5E8EB] text-[13px] leading-relaxed text-[#5C6573] min-w-0">
               <p className="truncate">{meta.fileName}</p>
               <p className="tabular">
                 <b className="font-semibold text-[#4E5968]">{courses.length}</b>개 과정 · <b className="font-semibold text-[#4E5968]">{teachers.length}</b>명 강사 · {meta.dateRange.start} ~ {meta.dateRange.end}
@@ -80,7 +80,7 @@ export default function ScheduleView({ data, changeLog, corpData, onCorpReload, 
                   aria-current={on ? 'page' : undefined}
                   className={[
                     'pt-2.5 pb-3 text-[15px] font-semibold border-b-2 transition-colors whitespace-nowrap',
-                    on ? 'border-[#191F28] text-[#191F28]' : 'border-transparent text-[#6B7684] hover:text-[#191F28]',
+                    on ? 'border-[#191F28] text-[#191F28]' : 'border-transparent text-[#5C6573] hover:text-[#191F28]',
                   ].join(' ')}
                 >
                   {tab.label}

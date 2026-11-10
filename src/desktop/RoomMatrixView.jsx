@@ -185,13 +185,13 @@ export default function RoomMatrixView({ courses, schedule }) {
                 <tr key={room}>
                   <td className="bg-gray-50 px-2 py-1.5 border-r border-b border-gray-100 align-middle sticky left-0 z-10">
                     <div className="text-xs font-semibold text-gray-800 leading-tight">{room}</div>
-                    <div className="text-xs text-gray-400 mt-0.5">{used}/8 사용</div>
+                    <div className="text-xs text-[#5C6573] mt-0.5">{used}/8 사용</div>
                   </td>
                   {periods.map((cell, pIdx) => {
                     if (cell.length === 0) {
                       return (
                         <td key={pIdx} className="border-r border-b border-gray-100 bg-gray-200/70 px-1 py-1 text-center align-middle">
-                          <span className="text-xs text-gray-400">—</span>
+                          <span aria-hidden="true" className="text-xs text-gray-400">—</span>
                         </td>
                       );
                     }
@@ -212,7 +212,7 @@ export default function RoomMatrixView({ courses, schedule }) {
                               {item.subject}
                             </p>
                             {item.teacher && (
-                              <p className="text-xs text-gray-500 truncate">{item.teacher}</p>
+                              <p className="text-xs text-[#5C6573] truncate">{item.teacher}</p>
                             )}
                           </div>
                         ))}
@@ -223,17 +223,17 @@ export default function RoomMatrixView({ courses, schedule }) {
               );
             })}
             {rooms.length === 0 && (
-              <tr><td colSpan={9} className="py-10 text-center text-gray-400 text-sm">강의실이 없습니다</td></tr>
+              <tr><td colSpan={9} className="py-10 text-center text-[#5C6573] text-sm">강의실이 없습니다</td></tr>
             )}
           </tbody>
         </table>
       </div>
 
-      <p className="text-[11px] text-gray-400">
+      <p className="text-[11px] text-[#5C6573]">
         <span className="inline-block w-2.5 h-2.5 align-middle rounded-sm bg-gray-200 border border-gray-300 mr-1" /> 빈 강의실
-        <span className="mx-2">/</span>
+        <span aria-hidden="true" className="mx-2">/</span>
         <span className="inline-block w-2.5 h-2.5 align-middle rounded-sm bg-[#EEF4FE] border border-[#D6E4FB] mr-1" /> 사용 중
-        <span className="mx-2">/</span>
+        <span aria-hidden="true" className="mx-2">/</span>
         <span className="inline-block w-2.5 h-2.5 align-middle rounded-sm bg-red-50 border border-red-300 mr-1" /> 동시 사용(충돌)
       </p>
     </div>

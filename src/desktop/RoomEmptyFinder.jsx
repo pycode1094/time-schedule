@@ -135,7 +135,7 @@ export default function RoomEmptyFinder({ courses, schedule }) {
             </svg>
           </NavBtn>
           {dayLabel && (
-            <span className="text-xs text-gray-500">{dayLabel}요일</span>
+            <span className="text-xs text-[#5C6573]">{dayLabel}요일</span>
           )}
         </div>
 
@@ -158,11 +158,11 @@ export default function RoomEmptyFinder({ courses, schedule }) {
           <div className="flex items-center gap-1 ml-2">
             <button
               onClick={() => setSelectedPeriods(new Set([1, 2, 3, 4, 5, 6, 7, 8]))}
-              className="px-2 py-1.5 text-xs text-gray-500 hover:bg-gray-100 rounded"
+              className="px-2 py-1.5 text-xs text-[#5C6573] hover:bg-gray-100 rounded"
             >전체</button>
             <button
               onClick={() => setSelectedPeriods(new Set())}
-              className="px-2 py-1.5 text-xs text-gray-500 hover:bg-gray-100 rounded"
+              className="px-2 py-1.5 text-xs text-[#5C6573] hover:bg-gray-100 rounded"
             >해제</button>
           </div>
         </div>
@@ -170,7 +170,7 @@ export default function RoomEmptyFinder({ courses, schedule }) {
 
       {/* 결과 */}
       {selectedPeriods.size === 0 ? (
-        <div className="bg-white border border-gray-200 rounded-xl p-6 text-center text-sm text-gray-400">
+        <div className="bg-white border border-gray-200 rounded-xl p-6 text-center text-sm text-[#5C6573]">
           교시를 1개 이상 선택하세요
         </div>
       ) : (
@@ -180,12 +180,12 @@ export default function RoomEmptyFinder({ courses, schedule }) {
             <h3 className="text-xs sm:text-sm font-semibold mb-3 flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-[#EEF4FE]0" />
               <span className="text-[#1B64DA]">빈 강의실</span>
-              <span className="text-gray-400 text-[13px]">
+              <span className="text-[#5C6573] text-[13px]">
                 {empty.length} / {buildingRooms.length} (선택 교시 전부 비어있는 곳)
               </span>
             </h3>
             {empty.length === 0
-              ? <p className="text-xs text-gray-400 py-4 text-center">선택한 시간대에 비어있는 강의실 없음</p>
+              ? <p className="text-xs text-[#5C6573] py-4 text-center">선택한 시간대에 비어있는 강의실 없음</p>
               : <ul className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
                   {empty.map(r => (
                     <li key={r} className="flex items-center gap-2 px-2.5 py-1.5 bg-[#EEF4FE] border border-[#D6E4FB] rounded-lg">
@@ -202,10 +202,10 @@ export default function RoomEmptyFinder({ courses, schedule }) {
             <h3 className="text-xs sm:text-sm font-semibold mb-3 flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-amber-500" />
               <span className="text-amber-700">사용 중</span>
-              <span className="text-gray-400 text-[13px]">{occupied.length}곳</span>
+              <span className="text-[#5C6573] text-[13px]">{occupied.length}곳</span>
             </h3>
             {occupied.length === 0
-              ? <p className="text-xs text-gray-400 py-4 text-center">사용 중인 강의실 없음</p>
+              ? <p className="text-xs text-[#5C6573] py-4 text-center">사용 중인 강의실 없음</p>
               : <ul className="space-y-2 max-h-[480px] overflow-y-auto">
                   {occupied.map(({ room, items }) => (
                     <li key={room} className="border border-gray-100 rounded-lg p-2.5">
@@ -220,7 +220,7 @@ export default function RoomEmptyFinder({ courses, schedule }) {
                               <p className="text-[13px] font-medium text-gray-700 truncate" title={it.subject}>
                                 {it.subject}
                               </p>
-                              <p className="text-xs text-gray-500 truncate" title={it.courseName}>
+                              <p className="text-xs text-[#5C6573] truncate" title={it.courseName}>
                                 {it.courseName}{it.teacher ? ' · ' + it.teacher : ''}
                               </p>
                             </div>

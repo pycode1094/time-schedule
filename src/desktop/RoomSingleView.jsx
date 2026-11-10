@@ -169,7 +169,7 @@ export default function RoomSingleView({ courses, schedule }) {
             })}
           </select>
 
-          <span className="px-2 sm:px-3 py-1.5 text-xs sm:text-sm font-medium text-gray-500 bg-gray-50 border border-gray-200 rounded-lg">
+          <span className="px-2 sm:px-3 py-1.5 text-xs sm:text-sm font-medium text-[#5C6573] bg-gray-50 border border-gray-200 rounded-lg">
             {Math.ceil(weekMonday.getDate() / 7)}주차
           </span>
 
@@ -227,7 +227,7 @@ export default function RoomSingleView({ courses, schedule }) {
                 <tr key={pIdx}>
                   <td className="px-2 py-1.5 text-center bg-gray-50 border-r border-b border-gray-100 align-middle">
                     <div className="font-semibold text-gray-700 text-sm leading-tight">{pIdx + 1}교시</div>
-                    <div className="text-gray-400 text-xs mt-0.5 leading-tight">{time}</div>
+                    <div className="text-[#5C6573] text-xs mt-0.5 leading-tight">{time}</div>
                   </td>
                   {grid.map((daySlots, dIdx) => {
                     const items = daySlots[pIdx];
@@ -254,7 +254,7 @@ export default function RoomSingleView({ courses, schedule }) {
                               {item.subject}
                             </p>
                             {item.teacher && (
-                              <p className="text-xs text-gray-500 truncate">{item.teacher}</p>
+                              <p className="text-xs text-[#5C6573] truncate">{item.teacher}</p>
                             )}
                           </div>
                         ))}
@@ -267,7 +267,7 @@ export default function RoomSingleView({ courses, schedule }) {
           </table>
 
           {stats.totalPeriods === 0 && (
-            <div className="py-10 text-center text-gray-400 text-sm bg-white rounded-b-xl border-t border-gray-100">
+            <div className="py-10 text-center text-[#5C6573] text-sm bg-white rounded-b-xl border-t border-gray-100">
               이 주에는 사용 내역이 없습니다
             </div>
           )}
@@ -275,14 +275,14 @@ export default function RoomSingleView({ courses, schedule }) {
 
         <div className="w-full lg:w-64 lg:flex-shrink-0 grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-1 gap-3">
           <div className="bg-white rounded-2xl border border-[#E5E8EB] bg-white p-3 sm:p-4">
-            <h3 className="text-xs sm:text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5 sm:mb-2">이번 주 사용</h3>
-            <p className="text-xl sm:text-2xl font-bold text-[#1B64DA]">{stats.totalPeriods}<span className="text-xs sm:text-sm font-normal text-gray-500 ml-1">교시</span></p>
+            <h3 className="text-xs sm:text-xs font-semibold text-[#5C6573] uppercase tracking-wider mb-1.5 sm:mb-2">이번 주 사용</h3>
+            <p className="text-xl sm:text-2xl font-bold text-[#1B64DA]">{stats.totalPeriods}<span className="text-xs sm:text-sm font-normal text-[#5C6573] ml-1">교시</span></p>
           </div>
 
           <div className="bg-white rounded-2xl border border-[#E5E8EB] bg-white p-3 sm:p-4">
-            <h3 className="text-xs sm:text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5 sm:mb-2">사용 과정</h3>
+            <h3 className="text-xs sm:text-xs font-semibold text-[#5C6573] uppercase tracking-wider mb-1.5 sm:mb-2">사용 과정</h3>
             {stats.courses.length === 0
-              ? <p className="text-xs sm:text-sm text-gray-400">없음</p>
+              ? <p className="text-xs sm:text-sm text-[#5C6573]">없음</p>
               : <ul className="space-y-1">
                   {stats.courses.map(c => (
                     <li key={c.id} className="flex items-center gap-1.5 min-w-0" title={c.name}>
@@ -299,9 +299,9 @@ export default function RoomSingleView({ courses, schedule }) {
           </div>
 
           <div className="bg-white rounded-2xl border border-[#E5E8EB] bg-white p-3 sm:p-4">
-            <h3 className="text-xs sm:text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5 sm:mb-2">사용 강사</h3>
+            <h3 className="text-xs sm:text-xs font-semibold text-[#5C6573] uppercase tracking-wider mb-1.5 sm:mb-2">사용 강사</h3>
             {stats.teachers.length === 0
-              ? <p className="text-xs sm:text-sm text-gray-400">없음</p>
+              ? <p className="text-xs sm:text-sm text-[#5C6573]">없음</p>
               : <div className="space-y-1">
                   {stats.teachers.map(t => (
                     <p key={t} className="text-[13px] text-gray-700 leading-snug">{t}</p>
@@ -381,7 +381,7 @@ function SearchableSelect({ items, value, onChange }) {
           </div>
           <div className="overflow-y-auto flex-1">
             {filtered.length === 0 && (
-              <p className="px-3 py-2 text-sm text-gray-400">검색 결과 없음</p>
+              <p className="px-3 py-2 text-sm text-[#5C6573]">검색 결과 없음</p>
             )}
             {filtered.map(r => (
               <button
