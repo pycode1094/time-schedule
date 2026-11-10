@@ -426,7 +426,7 @@ function RoomDetail({ app, merged, room }) {
           label={`${room} 주간`}
           items={blocks.map(b => ({
             id: b.key, date: b.date, periodStart: b.periodStart, periodEnd: b.periodEnd,
-            title: b.subject, lines: [b.teacher && `${b.teacher} 강사님`, b.courseName],
+            title: b.subject, lines: [b.teacher && `${b.teacher} 교수님`, b.courseName],
           }))}
           emptyText="이 주에는 이 강의실을 쓰는 수업이 없어요"
         />

@@ -32,7 +32,7 @@ function ChangeItem({ card, onJump, showTeacher, muted }) {
               {periodRange(card.periodStart, card.periodEnd)}{time ? ` · ${time}` : ''}
             </span>
           </span>
-          {showTeacher && <span className="mt-1.5 block text-label font-semibold text-ink">{card.teacher} 강사님</span>}
+          {showTeacher && <span className="mt-1.5 block text-label font-semibold text-ink">{card.teacher} 교수님</span>}
           <span className={`mt-1.5 block text-title3 ${card.type === 'removed' ? 'text-ink-2 line-through' : 'text-ink'}`}>{card.subject || '(과목 없음)'}</span>
           <span className="mt-0.5 block text-label text-ink-2">{card.course}</span>
           {card.type !== 'changed' && card.room && <span className="mt-0.5 block text-label text-ink-2">{card.room}</span>}

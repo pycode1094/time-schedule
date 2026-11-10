@@ -57,7 +57,7 @@ export default function TeacherPicker({
               <ListGroup>{results.map(row)}</ListGroup>
             </div>
           ) : (
-            <p className="px-1 py-6 text-center text-body text-ink-2">‘{query}’ 강사님을 찾지 못했어요</p>
+            <p className="px-1 py-6 text-center text-body text-ink-2">‘{query}’ 교수님을 찾지 못했어요</p>
           )
         ) : (
           <>

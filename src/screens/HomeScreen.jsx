@@ -82,7 +82,7 @@ export default function HomeScreen({ app, route }) {
               <li key={n}>
                 <ListRow
                   leading={<span className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-fill text-ink-2"><UserRound aria-hidden="true" className="w-5 h-5" /></span>}
-                  title={`${n} 강사님`}
+                  title={`${n} 교수님`}
                   trailing={n === teacher ? '기억 중' : null}
                   onClick={() => selectTeacher(n)}
                 />
@@ -115,7 +115,7 @@ export default function HomeScreen({ app, route }) {
                 <ListRow
                   title={r.course.name}
                   subtitle={[`${r.start}~${r.end}교시`, r.rooms.join(', ')].filter(Boolean).join(' · ')}
-                  meta={r.teachers.length ? `${r.teachers.join(', ')} 강사님` : null}
+                  meta={r.teachers.length ? `${r.teachers.join(', ')} 교수님` : null}
                   onClick={() => navigate(buildPath('course', 'c', r.course.id))}
                 />
               </li>

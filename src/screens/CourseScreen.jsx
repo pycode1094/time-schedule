@@ -211,7 +211,7 @@ function CourseDetail({ app, courseId }) {
           label={`${course.name} 주간`}
           items={blocks.map(b => ({
             id: b.key, date: b.date, periodStart: b.periodStart, periodEnd: b.periodEnd,
-            title: b.subject, lines: [b.teacher && `${b.teacher} 강사님`, b.room],
+            title: b.subject, lines: [b.teacher && `${b.teacher} 교수님`, b.room],
           }))}
         />
       </div>
@@ -284,7 +284,7 @@ function WeeklyOverview({ app }) {
           <ul className="mt-3 space-y-1.5">
             {conflicts.map((c, i) => (
               <li key={i} className="text-label text-ink">
-                {formatShort(c.date)} {c.period}교시 · {c.teacher} 강사님 — {c.courses.join(', ')}
+                {formatShort(c.date)} {c.period}교시 · {c.teacher} 교수님 — {c.courses.join(', ')}
               </li>
             ))}
           </ul>
@@ -305,7 +305,7 @@ function WeeklyOverview({ app }) {
                 <li key={b.key} className="px-5 py-3">
                   <p className="text-label font-semibold text-ink-2 tabular">{periodRange(b.periodStart, b.periodEnd)}{b.time ? ` · ${b.time}` : ''}</p>
                   <p className="mt-0.5 text-body font-semibold text-ink">{b.subject}</p>
-                  <p className="text-label text-ink-2">{[b.teacher && `${b.teacher} 강사님`, b.room].filter(Boolean).join(' · ')}</p>
+                  <p className="text-label text-ink-2">{[b.teacher && `${b.teacher} 교수님`, b.room].filter(Boolean).join(' · ')}</p>
                 </li>
               ))}
             </ul>

@@ -276,7 +276,7 @@ export default function WeeklyOverviewTab({ courses, schedule }) {
                     </colgroup>
                     <thead>
                       <tr>
-                        <th className="bg-[#F2F4F6] text-[#5C6573] px-4 py-3 text-left text-[13px] font-semibold border-b border-r border-b-[#E5E8EB] border-r-[#D1D6DB]">
+                        <th className="bg-[#F2F4F6] text-[#5C6573] px-4 py-3 text-left text-[13px] font-semibold border-b border-r-2 border-b-[#E5E8EB] border-r-[#D1D6DB]">
                           과정
                         </th>
                         {weekDates.map((dateStr, i) => {
@@ -296,44 +296,45 @@ export default function WeeklyOverviewTab({ courses, schedule }) {
                     <tbody>
                       {items.map(({ course, daySummaries }) => (
                         <tr key={course.id} className="border-b border-[#E5E8EB] last:border-b-0">
-                          {/* 과정 열: 옅은 회색 배경 + 진한 세로선으로 요일 열과 구분 */}
-                          <td className="px-4 py-3 align-top bg-[#F9FAFB] border-r border-[#D1D6DB]">
-                            <p className="text-sm font-semibold text-[#191F28] leading-snug break-keep" title={course.name}>
+                          {/* 과정 열: 옅은 회색 배경 + 굵은(2px) 세로선으로 요일 열과 구분
+                              과정 칸과 수업 칸은 같은 두 줄 구조(14px 굵게 / 13px 회색)라 첫 줄 · 둘째 줄 높이가 나란히 맞는다 */}
+                          <td className="px-4 py-3 align-top bg-[#F9FAFB] border-r-2 border-[#D1D6DB]">
+                            <p className="text-sm font-semibold leading-5 text-[#191F28] break-keep">
                               {course.name}
                             </p>
                             {course.manager && (
-                              <p className="text-xs text-[#5C6573] mt-1">담임 {course.manager}</p>
+                              <p className="mt-0.5 text-[13px] leading-[18px] text-[#5C6573]">담임 {course.manager}</p>
                             )}
                           </td>
                           {daySummaries.map((blocks, dIdx) => (
                             <td key={dIdx}
-                              className={`px-2 py-2 border-l border-[#F0F2F4] align-top ${weekDates[dIdx] === today ? 'bg-[#F7FAFF]' : ''}`}>
-                              {blocks.length === 0 ? (
-                                <div className="h-full min-h-[28px]" />
-                              ) : (
-                                <div className="divide-y divide-dashed divide-[#E5E8EB]">
-                                  {blocks.map((b, bi) => {
-                                    const isConflict = b.teacher && conflictKeys.has(`${dIdx}-${b.startPeriod - 1}-${b.teacher}`);
-                                    const periodLabel = b.startPeriod === b.endPeriod
-                                      ? `${b.startPeriod}교시`
-                                      : `${b.startPeriod}-${b.endPeriod}교시`;
-                                    return (
-                                      <div key={bi}
-                                        className={`min-w-0 leading-snug px-2 py-1.5 ${isConflict ? 'bg-red-50 rounded-lg ring-1 ring-red-200' : ''}`}
-                                        title={`${periodLabel} ${b.subject}${b.teacher ? ' / ' + b.teacher : ''}`}
-                                      >
-                                        <div className="text-xs text-[#5C6573] font-semibold tabular">{periodLabel.replace('-', '–')}</div>
-                                        <div className="mt-0.5 text-sm font-semibold text-[#191F28] break-keep">{b.subject}</div>
+                              className={`px-3.5 py-3 border-l border-[#F0F2F4] align-top ${weekDates[dIdx] === today ? 'bg-[#F7FAFF]' : ''}`}>
+                              {blocks.map((b, bi) => {
+                                const isConflict = b.teacher && conflictKeys.has(`${dIdx}-${b.startPeriod - 1}-${b.teacher}`);
+                                const periodLabel = b.startPeriod === b.endPeriod
+                                  ? `${b.startPeriod}교시`
+                                  : `${b.startPeriod}–${b.endPeriod}교시`;
+                                return (
+                                  <div key={bi} className={bi > 0 ? 'mt-2.5 pt-2.5 border-t border-[#F0F2F4]' : ''}>
+                                    {/* 수업 한 개 = 과목(첫 줄) / 교시 · 강사(둘째 줄). 강사 중복은 글자 위치를 유지한 채 빨간 배경 */}
+                                    <div
+                                      className={`min-w-0 ${isConflict ? '-mx-2 px-2 py-1 -my-1 rounded-lg bg-red-50 ring-1 ring-red-200' : ''}`}
+                                      title={`${periodLabel} ${b.subject}${b.teacher ? ' / ' + b.teacher : ''}`}
+                                    >
+                                      <p className="text-sm font-semibold leading-5 text-[#191F28] break-keep">{b.subject}</p>
+                                      <p className="mt-0.5 text-[13px] leading-[18px] text-[#5C6573]">
+                                        <span className="tabular">{periodLabel}</span>
                                         {b.teacher && (
-                                          <div className={`mt-0.5 text-[12.5px] ${isConflict ? 'text-red-600 font-bold' : 'text-[#5C6573]'}`}>
-                                            {b.teacher}
-                                          </div>
+                                          <>
+                                            <span aria-hidden="true"> · </span>
+                                            <span className={isConflict ? 'font-bold text-red-700' : ''}>{b.teacher}</span>
+                                          </>
                                         )}
-                                      </div>
-                                    );
-                                  })}
-                                </div>
-                              )}
+                                      </p>
+                                    </div>
+                                  </div>
+                                );
+                              })}
                             </td>
                           ))}
                         </tr>

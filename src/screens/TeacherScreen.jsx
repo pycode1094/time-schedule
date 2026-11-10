@@ -48,7 +48,7 @@ export default function TeacherScreen({ app, route }) {
     return (
       <Screen>
         <PageTitle
-          title={teacher ? `‘${teacher}’ 강사님을 찾지 못했어요` : '강사님 이름을 검색해 주세요'}
+          title={teacher ? `‘${teacher}’ 교수님을 찾지 못했어요` : '강사님 이름을 검색해 주세요'}
           description={teacher ? '이름을 다시 검색해 주세요. 고르면 다음부터 바로 보여 드려요.' : '고르면 기억해 두고 다음부터 바로 보여 드려요.'}
         />
         <TeacherPicker
@@ -142,19 +142,19 @@ function TeacherView({ app, sheet }) {
   // 앱 바: 이니셜 + 강사 이름(누르면 다른 강사) + 검색
   const header = (
     <div className="flex items-center gap-2.5 h-14">
-      <h1 className="sr-only">{teacher} 강사님 시간표</h1>
+      <h1 className="sr-only">{teacher} 교수님 시간표</h1>
       <button
         type="button"
         onClick={() => openSheet('pick-teacher')}
         className="press -ml-1 flex min-w-0 items-center gap-2.5 rounded-[14px] py-1 pl-1 pr-2"
-        aria-label={`${teacher} 강사님, 다른 강사 보기`}
+        aria-label={`${teacher} 교수님, 다른 강사 보기`}
       >
         <span aria-hidden="true" className="inline-flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-primary-weak text-[15px] font-bold text-primary-ink">
           {teacher.slice(0, 1)}
         </span>
         <span className="min-w-0 text-left">
           <span className="flex items-center gap-0.5 text-title3 font-bold text-ink">
-            <span className="truncate">{teacher} 강사님</span>
+            <span className="truncate">{teacher} 교수님</span>
             <ChevronDown aria-hidden="true" className="w-4 h-4 flex-shrink-0 text-ink-3" />
           </span>
           {info?.field && <span className="block truncate text-caption text-ink-2">{info.field}</span>}

@@ -186,7 +186,7 @@ export default function ByDateTab({ courses, schedule }) {
           <div className="overflow-x-auto rounded-2xl border border-[#E5E8EB] bg-white">
             <table className="w-full border-collapse bg-white text-sm table-fixed min-w-[800px] sm:min-w-0">
               <colgroup>
-                <col className="w-[140px] sm:w-[200px]" />
+                <col className="w-[140px] sm:w-[200px] lg:w-[240px]" />
                 {PERIOD_TIMES.map((_, i) => <col key={i} />)}
               </colgroup>
               <thead>
@@ -290,11 +290,12 @@ function CourseRow({ course, slots, hasData, pal }) {
     <tr className={`border-b border-gray-100 ${!hasData ? 'opacity-40' : ''}`}>
       {/* 과정명 셀 (sticky) */}
       <td className="px-2 sm:px-3 py-1.5 sm:py-2 border-r border-gray-100 sticky left-0 bg-white z-[5]">
-        <div className="flex items-center gap-1 sm:gap-1.5 min-w-0">
-          <span className={`flex-shrink-0 text-[13px] font-semibold px-1 sm:px-1.5 py-0.5 rounded ${pal.badge}`}>
+        {/* 과정명은 자르지 않고 줄바꿈 (긴 이름도 끝까지 보이게) */}
+        <div className="flex items-start gap-1 sm:gap-1.5 min-w-0">
+          <span className={`flex-shrink-0 text-[13px] leading-[18px] font-semibold px-1 sm:px-1.5 py-0.5 rounded ${pal.badge}`}>
             {course.category.slice(0, 2)}
           </span>
-          <span className="text-[13px] font-medium text-gray-800 truncate" title={course.name}>
+          <span className="min-w-0 pt-0.5 text-[13px] leading-[18px] font-medium text-gray-800 break-keep">
             {course.name}
           </span>
         </div>

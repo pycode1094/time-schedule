@@ -86,7 +86,7 @@ export default function DayScreen({ app, route }) {
                         {b.time ? ` · ${b.time}` : ''}
                       </p>
                       <p className="mt-0.5 text-body font-semibold text-ink">{b.subject}</p>
-                      <p className="text-label text-ink-2">{[b.teacher && `${b.teacher} 강사님`, b.room].filter(Boolean).join(' · ')}</p>
+                      <p className="text-label text-ink-2">{[b.teacher && `${b.teacher} 교수님`, b.room].filter(Boolean).join(' · ')}</p>
                     </li>
                   ))}
                 </ul>

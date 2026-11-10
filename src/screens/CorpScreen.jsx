@@ -123,7 +123,7 @@ function CorpCourse({ app, course }) {
           label={`${course.name} 주간`}
           items={blocks.map(b => ({
             id: b.key, date: b.date, periodStart: b.periodStart, periodEnd: b.periodEnd,
-            title: b.subject, lines: [b.teacher && `${b.teacher} 강사님`, b.room],
+            title: b.subject, lines: [b.teacher && `${b.teacher} 교수님`, b.room],
           }))}
         />
       </div>
