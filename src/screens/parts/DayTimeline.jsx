@@ -37,14 +37,14 @@ export default function DayTimeline({ items, onItemClick }) {
         const p = i + 1;
         return (
           <div key={p} className="absolute inset-x-0 flex" style={{ top: topOf(p), height: ROW }}>
-            <span className="w-14 flex-shrink-0 -translate-y-2 pr-2.5 text-right text-caption font-medium text-ink-3 tabular">{t}</span>
+            <span className="w-14 flex-shrink-0 -translate-y-2 pr-2.5 text-right text-caption font-medium text-ink-2 tabular">{t}</span>
             <span className="flex-1 border-t border-line" aria-hidden="true" />
           </div>
         );
       })}
       <div className="absolute inset-x-0 flex" style={{ top: topOf(LUNCH_AFTER) + ROW, height: LUNCH }} aria-hidden="true">
         <span className="w-14 flex-shrink-0" />
-        <span className="flex flex-1 items-center rounded-[8px] bg-fill px-3 text-caption font-medium text-ink-3">
+        <span className="flex flex-1 items-center rounded-[8px] bg-fill px-3 text-caption font-medium text-ink-2">
           점심시간 {PERIOD_TIMES[LUNCH_AFTER - 1].split('~')[1]}–{starts[LUNCH_AFTER]}
         </span>
       </div>
@@ -59,12 +59,13 @@ export default function DayTimeline({ items, onItemClick }) {
         const top = topOf(it.start) + 3;
         const h = topOf(it.end) + ROW - topOf(it.start) - 6;
         const tall = h >= ROW * 2 - 10;
-        const Tag = onItemClick ? 'button' : 'div';
+        const clickable = !!onItemClick && it.clickable !== false;
+        const Tag = clickable ? 'button' : 'div';
         return (
           <Tag
             key={it.segKey}
-            type={onItemClick ? 'button' : undefined}
-            onClick={onItemClick ? () => onItemClick(it) : undefined}
+            type={clickable ? 'button' : undefined}
+            onClick={clickable ? () => onItemClick(it) : undefined}
             className={`press absolute right-0 left-14 overflow-hidden rounded-[14px] text-left ${tone.box}`}
             style={{ top, height: h }}
             aria-label={`${periodRange(it.fullStart, it.fullEnd)} ${it.subject || ''} ${it.room || ''}${it.tone ? ` ${TYPE_LABEL[it.tone]}` : ''}${it.cont ? ' (오후 이어서)' : ''}`}
@@ -85,13 +86,13 @@ export default function DayTimeline({ items, onItemClick }) {
                 <p className="mt-0.5 flex flex-wrap items-center gap-x-1 text-label text-ink-2">
                   <MapPin aria-hidden="true" className="w-3.5 h-3.5 flex-shrink-0" />
                   {it.change?.before?.room && it.change.before.room !== it.room && (
-                    <><span className="text-ink-3 line-through">{it.change.before.room}</span><span aria-hidden="true">→</span></>
+                    <><span className="line-through">{it.change.before.room}</span><span aria-hidden="true">→</span></>
                   )}
                   <span className={it.change?.before?.room && it.change.before.room !== it.room ? 'font-semibold text-ink' : ''}>{it.room}</span>
                 </p>
               )}
               {tall && it.courseName && h >= ROW * 3 - 10 && (
-                <p className="mt-0.5 truncate text-caption text-ink-3">{it.courseName}</p>
+                <p className="mt-0.5 truncate text-caption text-ink-2">{it.courseName}</p>
               )}
             </div>
           </Tag>

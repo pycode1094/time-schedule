@@ -657,7 +657,7 @@ export default function AdminPanel({
         <div
           role="status"
           aria-live="polite"
-          className="fixed inset-x-0 bottom-[calc(72px+env(safe-area-inset-bottom))] lg:bottom-8 z-[60] mx-auto w-fit max-w-[90vw] rounded-full bg-ink px-5 py-3 text-label font-semibold text-surface shadow-[var(--shadow-pop)] lg:ml-[calc(50%+120px)] lg:-translate-x-1/2"
+          className="fixed inset-x-0 bottom-[calc(72px+env(safe-area-inset-bottom))] lg:bottom-8 z-[60] mx-auto w-fit max-w-[90vw] rounded-full bg-ink px-5 py-3 text-label font-semibold text-surface shadow-[var(--shadow-pop)]"
         >
           {busyMsg || '처리 중...'}
         </div>

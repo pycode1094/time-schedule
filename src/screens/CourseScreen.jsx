@@ -54,7 +54,7 @@ function CourseHome({ app, mode }) {
       <PageTitle
         title="전체 시간표"
         right={
-          <button type="button" onClick={() => navigate('/day')} className="press inline-flex h-10 items-center rounded-full bg-surface px-4 text-label font-semibold text-ink-2">
+          <button type="button" onClick={() => navigate('/day')} className="press inline-flex h-11 items-center rounded-full bg-surface px-4 text-label font-semibold text-ink-2">
             날짜별 현황
           </button>
         }

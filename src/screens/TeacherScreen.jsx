@@ -142,6 +142,7 @@ function TeacherView({ app, sheet }) {
   // 앱 바: 이니셜 + 강사 이름(누르면 다른 강사) + 검색
   const header = (
     <div className="flex items-center gap-2.5 h-14">
+      <h1 className="sr-only">{teacher} 강사님 시간표</h1>
       <button
         type="button"
         onClick={() => openSheet('pick-teacher')}
@@ -156,7 +157,7 @@ function TeacherView({ app, sheet }) {
             <span className="truncate">{teacher} 강사님</span>
             <ChevronDown aria-hidden="true" className="w-4 h-4 flex-shrink-0 text-ink-3" />
           </span>
-          {info?.field && <span className="block truncate text-caption text-ink-3">{info.field}</span>}
+          {info?.field && <span className="block truncate text-caption text-ink-2">{info.field}</span>}
         </span>
       </button>
       <span className="flex-1" />
@@ -220,6 +221,7 @@ function TeacherView({ app, sheet }) {
       key: item.block.key, start: item.block.periodStart, end: item.block.periodEnd,
       subject: item.block.subject, courseName: item.block.courseName, room: item.block.room,
       tone: item.block.change?.type, overlap: item.block.overlap, change: item.block.change,
+      clickable: !!item.block.change,
     }
     : {
       key: item.card.id, start: item.card.periodStart, end: item.card.periodEnd,
@@ -274,7 +276,7 @@ function TeacherView({ app, sheet }) {
         <div className="mt-5" aria-live="polite">
           <h2 className="flex items-baseline gap-2 px-1">
             <span className="text-title3 font-bold text-ink">{formatMDW(selected)}</span>
-            <span className="text-label text-ink-3 tabular">
+            <span className="text-label text-ink-2 tabular">
               {dayLessons.length ? `${dayPeriods}교시` : '수업 없음'}
             </span>
           </h2>

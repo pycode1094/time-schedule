@@ -18,7 +18,7 @@ export function BottomNav({ activeId, onNavigate }) {
                 href={hrefOf(item.path)}
                 onClick={(e) => { e.preventDefault(); onNavigate(item.path); }}
                 aria-current={active ? 'page' : undefined}
-                className={`press flex flex-col items-center justify-center gap-0.5 h-14 text-caption font-semibold ${active ? 'text-ink' : 'text-ink-3'}`}
+                className={`press flex flex-col items-center justify-center gap-0.5 h-14 text-caption font-semibold ${active ? 'text-ink' : 'text-ink-2'}`}
               >
                 <Icon aria-hidden="true" className="w-6 h-6" strokeWidth={active ? 2.4 : 2} />
                 {item.label}

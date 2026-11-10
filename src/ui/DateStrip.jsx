@@ -27,12 +27,12 @@ export default function DateStrip({
           {onTitleClick ? (
             <button type="button" onClick={onTitleClick} className="press min-h-11 rounded-[12px] px-1 text-left">
               <span className="text-[15px] font-semibold text-ink-2">{title}</span>
-              {subtitle && <span className="ml-1.5 text-caption text-ink-3 tabular">{subtitle}</span>}
+              {subtitle && <span className="ml-1.5 text-caption text-ink-2 tabular">{subtitle}</span>}
             </button>
           ) : (
             <div className="px-1">
               <span className="text-[15px] font-semibold text-ink-2">{title}</span>
-              {subtitle && <span className="ml-1.5 text-caption text-ink-3 tabular">{subtitle}</span>}
+              {subtitle && <span className="ml-1.5 text-caption text-ink-2 tabular">{subtitle}</span>}
             </div>
           )}
           <IconButton label="다음 주" onClick={onNext} disabled={!canNext}>
@@ -43,9 +43,9 @@ export default function DateStrip({
               type="button"
               onClick={onToday}
               disabled={!showToday}
-              className="press ml-auto h-8 rounded-full bg-primary-weak px-3 text-label font-semibold text-primary-ink disabled:opacity-0"
+              className="press ml-auto inline-flex h-11 items-center px-1 disabled:opacity-0"
             >
-              오늘
+              <span className="inline-flex h-8 items-center rounded-full bg-primary-weak px-3 text-label font-semibold text-primary-ink">오늘</span>
             </button>
           )}
         </div>
@@ -65,18 +65,18 @@ export default function DateStrip({
                 onClick={() => onSelect(d)}
                 className="press flex flex-col items-center gap-1 py-1"
               >
-                <span className={`text-caption font-semibold ${isSel || isToday ? 'text-primary-ink' : 'text-ink-3'}`}>{w}</span>
+                <span className={`text-caption font-semibold ${isSel || isToday ? 'text-primary-ink' : 'text-ink-2'}`}>{w}</span>
                 <span
                   className={[
-                    'inline-flex h-10 w-10 items-center justify-center rounded-full text-[17px] font-semibold tabular',
-                    isSel ? 'bg-primary text-white' : isToday ? 'text-primary-ink' : m.lessons ? 'text-ink' : 'text-icon-off',
+                    'inline-flex h-10 w-10 items-center justify-center rounded-full text-[17px] tabular',
+                    isSel ? 'bg-primary text-white font-semibold' : isToday ? 'text-primary-ink font-semibold' : m.lessons ? 'text-ink font-semibold' : 'text-ink-2 font-normal',
                   ].join(' ')}
                 >
                   {dd}
                 </span>
                 <span className="flex h-1.5 items-center gap-1" aria-hidden="true">
-                  {m.lessons && !m.changed && <span className={`h-1.5 w-1.5 rounded-full ${isSel ? 'bg-primary' : 'bg-icon-off'}`} />}
-                  {m.changed && <span className="h-1.5 w-1.5 rounded-full bg-[#F59E0B]" />}
+                  {m.lessons && !m.changed && <span className={`h-1.5 w-1.5 rounded-full ${isSel ? 'bg-primary' : 'bg-ink-3'}`} />}
+                  {m.changed && <span className="h-1.5 w-1.5 rounded-full bg-mod" />}
                 </span>
               </button>
             );

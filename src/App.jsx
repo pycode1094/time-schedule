@@ -104,7 +104,16 @@ export default function App() {
     };
   }, [isDesktop]);
 
-  if (isDesktop && !status) {
+  // PC 로딩 · 오류: 폰용 화면 틀(하단 탭 · 사이드바) 없이 가운데에만 표시
+  if (isDesktop && status) {
+    return (
+      <div className="min-h-dvh bg-canvas">
+        <div className="mx-auto max-w-[1376px] px-8">{status}</div>
+      </div>
+    );
+  }
+
+  if (isDesktop) {
     return (
       <DesktopView
         data={parsedData}
