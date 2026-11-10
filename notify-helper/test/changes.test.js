@@ -159,7 +159,7 @@ test('01000_2_21: 등록 본문과 글자 단위로 같고, 제목 없음, 버�
   assert.equal(cfg.template.text, V2_TEXT);
   assert.equal(cfg.template.title, '');
   assert.equal(cfg.template.usesChanges, true);
-  assert.deepEqual(cfg.template.buttons, [{ type: 'WL', name: '시간표 확인', urlMobile: 'https://pycode1094.github.io/time-schedule/' }]);
+  assert.deepEqual(cfg.template.buttons, [{ type: 'WL', name: '시간표 확인', urlMobile: 'https://pycode1094.github.io/time-schedule/', urlPc: 'https://pycode1094.github.io/time-schedule/' }]);
 
   const changesText = render([ch({ endPeriod: 4 })]);
   const { text } = buildMessage(cfg.template, { name: '홍길동', changesText });
