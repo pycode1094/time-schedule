@@ -27,6 +27,13 @@ export default defineConfig([
     },
   },
   {
+    // 서비스워커 (public/sw.js)
+    files: ['public/sw.js'],
+    languageOptions: {
+      globals: globals.serviceworker,
+    },
+  },
+  {
     // Node 에서 실행되는 설정·스크립트
     files: ['vite.config.js', 'scripts/**/*.{js,mjs}', 'notify-helper/**/*.js'],
     extends: [js.configs.recommended],

@@ -1,6 +1,265 @@
 @import "tailwindcss";
 
+/* ─────────────────────────────────────────────────────────────
+   디자인 토큰
+   색은 CSS 변수로 두고 라이트 · 다크를 바꿔 끼운다.
+   - 시스템 설정을 따라가고(prefers-color-scheme),
+   - <html data-theme="light|dark"> 가 있으면 그것을 우선한다 (더보기 › 화면 테마).
+   글자 색 조합은 WCAG AA(4.5:1) 이상으로 맞춰 두었다. ink-3 은 흰 카드 위에서만 쓴다.
+   ───────────────────────────────────────────────────────────── */
+:root {
+  --bg: #F2F4F6;
+  --surface: #FFFFFF;
+  --fill: #F2F4F6;
+  --line: #E5E8EB;
+  --ink: #191F28;
+  --ink-2: #4E5968;
+  --ink-3: #6B7684;
+  --icon-off: #B0B8C1;
+  --primary: #1B64DA;
+  --primary-press: #1552B5;
+  --primary-weak: #E8F0FD;
+  --primary-ink: #1B64DA;
+  --add: #0E7A4B;
+  --add-weak: #E6F5EE;
+  --mod: #B45309;
+  --mod-weak: #FFF3E0;
+  --del: #C62828;
+  --del-weak: #FDECEC;
+  --kakao: #FFF9DB;
+  --kakao-line: #F2DF9B;
+  --kakao-ink: #4D3F00;
+  --scrim: rgb(0 0 0 / 0.45);
+  --ring: #1B64DA;
+  --shadow-sheet: 0 -8px 32px rgb(0 0 0 / 0.12);
+  --shadow-pop: 0 12px 40px rgb(0 0 0 / 0.16);
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0F1115;
+    --surface: #1B1D22;
+    --fill: #262930;
+    --line: #2D3038;
+    --ink: #F2F4F6;
+    --ink-2: #C1C7CF;
+    --ink-3: #959DA8;
+    --icon-off: #5C636E;
+    --primary: #1B64DA;
+    --primary-press: #2B6FE0;
+    --primary-weak: #1A2840;
+    --primary-ink: #7AAEFF;
+    --add: #4CD08D;
+    --add-weak: #12301F;
+    --mod: #F5A53B;
+    --mod-weak: #3A2A12;
+    --del: #FF7B7B;
+    --del-weak: #3A1A1A;
+    --kakao: #332D12;
+    --kakao-line: #5A4E1E;
+    --kakao-ink: #F3E3A0;
+    --scrim: rgb(0 0 0 / 0.6);
+    --ring: #7AAEFF;
+    --shadow-sheet: 0 -8px 32px rgb(0 0 0 / 0.5);
+    --shadow-pop: 0 12px 40px rgb(0 0 0 / 0.5);
+    color-scheme: dark;
+  }
+}
+
+:root[data-theme="dark"] {
+  --bg: #0F1115;
+  --surface: #1B1D22;
+  --fill: #262930;
+  --line: #2D3038;
+  --ink: #F2F4F6;
+  --ink-2: #C1C7CF;
+  --ink-3: #959DA8;
+  --icon-off: #5C636E;
+  --primary: #1B64DA;
+  --primary-press: #2B6FE0;
+  --primary-weak: #1A2840;
+  --primary-ink: #7AAEFF;
+  --add: #4CD08D;
+  --add-weak: #12301F;
+  --mod: #F5A53B;
+  --mod-weak: #3A2A12;
+  --del: #FF7B7B;
+  --del-weak: #3A1A1A;
+  --kakao: #332D12;
+  --kakao-line: #5A4E1E;
+  --kakao-ink: #F3E3A0;
+  --scrim: rgb(0 0 0 / 0.6);
+  --ring: #7AAEFF;
+  --shadow-sheet: 0 -8px 32px rgb(0 0 0 / 0.5);
+  --shadow-pop: 0 12px 40px rgb(0 0 0 / 0.5);
+  color-scheme: dark;
+}
+
+@theme inline {
+  --font-sans: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, system-ui, 'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', sans-serif;
+
+  --color-canvas: var(--bg);
+  --color-surface: var(--surface);
+  --color-fill: var(--fill);
+  --color-line: var(--line);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-ink-3: var(--ink-3);
+  --color-icon-off: var(--icon-off);
+  --color-primary: var(--primary);
+  --color-primary-press: var(--primary-press);
+  --color-primary-weak: var(--primary-weak);
+  --color-primary-ink: var(--primary-ink);
+  --color-add: var(--add);
+  --color-add-weak: var(--add-weak);
+  --color-mod: var(--mod);
+  --color-mod-weak: var(--mod-weak);
+  --color-del: var(--del);
+  --color-del-weak: var(--del-weak);
+  --color-kakao: var(--kakao);
+  --color-kakao-line: var(--kakao-line);
+  --color-kakao-ink: var(--kakao-ink);
+  --color-scrim: var(--scrim);
+}
+
+@theme {
+  /* 글자: 본문 16, 제목 20~26, 큰 숫자 32. 최소 13px */
+  --text-display: 2rem;
+  --text-display--line-height: 2.5rem;
+  --text-display--letter-spacing: -0.02em;
+  --text-display--font-weight: 700;
+  --text-title1: 1.625rem;
+  --text-title1--line-height: 2.125rem;
+  --text-title1--letter-spacing: -0.02em;
+  --text-title1--font-weight: 700;
+  --text-title2: 1.25rem;
+  --text-title2--line-height: 1.75rem;
+  --text-title2--letter-spacing: -0.015em;
+  --text-title2--font-weight: 700;
+  --text-title3: 1.0625rem;
+  --text-title3--line-height: 1.5rem;
+  --text-title3--letter-spacing: -0.01em;
+  --text-title3--font-weight: 600;
+  --text-body: 1rem;
+  --text-body--line-height: 1.5rem;
+  --text-label: 0.875rem;
+  --text-label--line-height: 1.25rem;
+  --text-caption: 0.8125rem;
+  --text-caption--line-height: 1.125rem;
+
+  /* 라운드 */
+  --radius-card: 20px;
+  --radius-sheet: 24px;
+  --radius-btn: 16px;
+  --radius-input: 14px;
+  --radius-badge: 8px;
+
+  /* 레이아웃 */
+  --container-content: 1100px;
+  --container-mobile: 640px;
+
+  --animate-sheet-up: sheet-up 280ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  --animate-pop-in: pop-in 200ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  --animate-fade-in: fade-in 180ms ease-out;
+  --animate-screen-in: screen-in 180ms ease-out;
+  --animate-shimmer: shimmer 1.4s ease-in-out infinite;
+
+  @keyframes sheet-up {
+    from { transform: translateY(100%); }
+    to { transform: translateY(0); }
+  }
+  @keyframes pop-in {
+    from { opacity: 0; transform: translateY(8px) scale(0.98); }
+    to { opacity: 1; transform: none; }
+  }
+  @keyframes fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  @keyframes screen-in {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: none; }
+  }
+  @keyframes shimmer {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.55; }
+  }
+}
+
+/* ── 기본 ─────────────────────────────────────────────────── */
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
 body {
   margin: 0;
-  font-family: 'Pretendard', 'Noto Sans KR', system-ui, -apple-system, sans-serif;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-size: 1rem;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+#root {
+  min-height: 100dvh;
+}
+
+/* 키보드 포커스 표시 (마우스 · 터치에는 안 보임) */
+:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline-offset: 0;
+}
+
+/* 숫자는 자릿수를 맞춘다 */
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+/* 누를 때 살짝 작아지는 효과 */
+.press {
+  transition: transform 120ms ease, background-color 120ms ease, opacity 120ms ease;
+}
+.press:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+/* 가로 스크롤 영역의 스크롤바 숨김 (내용은 그대로 스크롤) */
+.no-scrollbar {
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* 하단 탭바 · 안전 영역 */
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+.pt-safe {
+  padding-top: env(safe-area-inset-top);
+}
+
+/* 움직임 줄이기 설정을 존중한다 */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .press:active:not(:disabled) {
+    transform: none;
+  }
 }

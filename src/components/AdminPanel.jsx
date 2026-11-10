@@ -1,5 +1,12 @@
-import { useRef, useState } from 'react';
-import Modal from './Modal';
+import { useEffect, useRef, useState } from 'react';
+import { LogOut, RotateCcw, Trash2, Upload } from 'lucide-react';
+import Screen from '../ui/Screen.jsx';
+import Card from '../ui/Card.jsx';
+import Button from '../ui/Button.jsx';
+import BottomSheet from '../ui/BottomSheet.jsx';
+import { Badge, Tag } from '../ui/Chip.jsx';
+import { ScreenSkeleton } from '../ui/Skeleton.jsx';
+import { goBack } from '../lib/router.js';
 import TisTargetsModal from './TisTargetsModal';
 import { API_BASE, parseWorkbook } from '../utils/parseExcel.js';
 import { stripTeacherContacts } from '../utils/sanitizeExcel.js';
@@ -441,239 +448,219 @@ export default function AdminPanel({
     setTisTargets(t => ({ ...t, items: t.items.map(i => (i.phone ? { ...i, checked } : i)) }));
   }
 
-  return (
-    <>
-      <button
-        onClick={openAdmin}
-        className={[
-          'flex-shrink-0 flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium rounded-lg transition-colors',
-          adminPassword
-            ? 'bg-blue-600 text-white hover:bg-blue-700'
-            : 'bg-gray-100 text-gray-600 hover:bg-gray-200',
-        ].join(' ')}
-        title={adminPassword ? '관리자 모드 (열기)' : '관리자 로그인'}
-      >
-        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-            d="M12 11c1.657 0 3-1.343 3-3S13.657 5 12 5 9 6.343 9 8s1.343 3 3 3zm0 2c-2.67 0-8 1.337-8 4v2h16v-2c0-2.663-5.33-4-8-4z" />
-        </svg>
-        <span className="hidden sm:inline">{adminPassword ? '관리자' : '관리자'}</span>
-      </button>
+  // 전체 페이지(#/admin)로 열릴 때: 예전 [관리자] 버튼을 누른 것과 같은 준비
+  //   (로그인돼 있으면 패널 + 기업교육 목록, 아니면 로그인 입력)
+  useEffect(() => {
+    openAdmin();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-      {/* 로그인 모달 */}
-      {showLogin && (
-        <Modal onClose={closeLogin} title="관리자 로그인">
-          <form onSubmit={handleLoginSubmit} className="space-y-4">
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">비밀번호</label>
+  function leavePage() {
+    closeLogin();
+    closePanel();
+    goBack('/more');
+  }
+
+  return (
+    <Screen title="관리자" onBack={leavePage}>
+      {!adminPassword ? (
+        <div className="max-w-md">
+          <h1 className="text-title1 text-ink">관리자 로그인</h1>
+          <p className="mt-1.5 text-body text-ink-2">시간표를 올리고 강사님께 알림을 보내는 곳이에요.</p>
+          <form onSubmit={handleLoginSubmit} className="mt-6 space-y-4">
+            <label className="block">
+              <span className="mb-2 block text-label font-semibold text-ink-2">비밀번호</span>
               <input
-                autoFocus
+                autoFocus={showLogin}
                 type="password"
+                autoComplete="current-password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 disabled={busy}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-blue-500"
+                className="w-full h-14 px-4 rounded-input bg-surface text-body text-ink placeholder:text-ink-2 outline-none focus:ring-2 focus:ring-[var(--ring)]"
                 placeholder="관리자 비밀번호"
               />
-            </div>
-            {loginErr && (
-              <p className="text-xs text-red-600">{loginErr}</p>
-            )}
-            <div className="flex justify-end gap-2 pt-2">
-              <button
-                type="button"
-                onClick={closeLogin}
-                disabled={busy}
-                className="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg"
-              >
-                취소
-              </button>
-              <button
-                type="submit"
-                disabled={busy || !password}
-                className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
-              >
-                {busy ? '확인 중...' : '로그인'}
-              </button>
-            </div>
+            </label>
+            {loginErr && <p role="alert" className="text-label font-semibold text-del">{loginErr}</p>}
+            <Button type="submit" size="lg" block disabled={busy || !password}>
+              {busy ? '확인 중...' : '로그인'}
+            </Button>
           </form>
-        </Modal>
-      )}
+        </div>
+      ) : !showPanel ? (
+        <ScreenSkeleton label="관리자 화면을 여는 중이에요" />
+      ) : (
+        <div className="space-y-4">
+          <h1 className="text-title1 text-ink">관리자</h1>
 
-      {/* 관리자 패널 */}
-      {showPanel && adminPassword && (
-        <Modal onClose={closePanel} title="관리자 패널" width="max-w-lg">
-          <div className="space-y-5">
-            {/* ── 훈련취업팀 · 종합시간표 ─────────────────── */}
-            <section className="space-y-3">
-              <div className="flex items-center gap-2">
-                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-blue-100 text-blue-700">훈련취업팀</span>
-                <h4 className="text-sm font-semibold text-gray-800">종합시간표 (통합 파일 1개)</h4>
+          {/* ── 훈련취업팀 · 종합시간표 ─────────────────── */}
+          <Card>
+            <Tag>훈련취업팀</Tag>
+            <h2 className="mt-2 text-title2 text-ink">종합시간표</h2>
+            <p className="mt-1 text-label text-ink-2">통합 파일 1개예요. 올리기 전에 강사별 변경 내용을 확인하고, 교강사 연락처는 자동으로 지워요.</p>
+            <dl className="mt-4 divide-y divide-line rounded-[14px] bg-fill px-4">
+              <div className="flex items-center justify-between gap-3 py-3 text-label">
+                <dt className="text-ink-2">지금 보여 주는 시간표</dt>
+                <dd className="font-semibold text-ink">{source === 'uploaded' ? '관리자 업로드본' : '기본 내장본'}</dd>
               </div>
+              {uploadedAt && (
+                <div className="flex items-center justify-between gap-3 py-3 text-label">
+                  <dt className="text-ink-2">업로드 시각</dt>
+                  <dd className="font-semibold text-ink tabular">{new Date(uploadedAt).toLocaleString('ko-KR')}</dd>
+                </div>
+              )}
+            </dl>
 
-              <div className="text-xs text-gray-500 space-y-0.5">
-                <p>
-                  현재 표시 중:{' '}
-                  <span className="font-medium text-gray-700">
-                    {source === 'uploaded' ? '관리자 업로드본' : '기본 내장본'}
-                  </span>
-                </p>
-                {uploadedAt && (
-                  <p>업로드 시각: {new Date(uploadedAt).toLocaleString('ko-KR')}</p>
-                )}
-              </div>
+            <input
+              ref={fileRef}
+              type="file"
+              accept=".xlsx"
+              className="hidden"
+              onChange={(e) => {
+                handleUploadFile(e.target.files[0]);
+                e.target.value = '';
+              }}
+            />
+            <div
+              onClick={() => !busy && fileRef.current?.click()}
+              className="mt-4 hidden lg:flex flex-col items-center justify-center gap-1 rounded-[16px] border-2 border-dashed border-line p-6 text-center cursor-pointer hover:bg-fill/60"
+              onDragOver={(e) => { e.preventDefault(); }}
+              onDrop={(e) => {
+                e.preventDefault();
+                if (!busy) handleUploadFile(e.dataTransfer.files[0]);
+              }}
+            >
+              <Upload aria-hidden="true" className="w-6 h-6 text-ink-3" />
+              <p className="text-body font-semibold text-ink">엑셀 파일을 여기로 끌어다 놓아도 돼요</p>
+              <p className="text-label text-ink-2">.xlsx · 기존 업로드본을 대체해요</p>
+            </div>
+            <Button size="lg" block className="mt-4" disabled={busy} onClick={() => !busy && fileRef.current?.click()}>
+              <Upload aria-hidden="true" className="w-5 h-5" />
+              종합시간표 엑셀 올리기
+            </Button>
 
-              <div
-                onClick={() => !busy && fileRef.current?.click()}
-                className="border-2 border-dashed border-gray-300 hover:border-blue-400 hover:bg-blue-50/30 rounded-xl p-4 text-center cursor-pointer transition-colors"
-                onDragOver={(e) => { e.preventDefault(); }}
-                onDrop={(e) => {
-                  e.preventDefault();
-                  if (!busy) handleUploadFile(e.dataTransfer.files[0]);
-                }}
-              >
-                <input
-                  ref={fileRef}
-                  type="file"
-                  accept=".xlsx"
-                  className="hidden"
-                  onChange={(e) => {
-                    handleUploadFile(e.target.files[0]);
-                    e.target.value = '';
-                  }}
-                />
-                <p className="text-sm font-medium text-gray-700">
-                  종합시간표 엑셀(.xlsx) 업로드
-                </p>
-                <p className="text-xs text-gray-400 mt-1">
-                  클릭 또는 드래그&드롭. 기존 업로드본을 대체합니다.
-                </p>
-                <p className="text-xs text-gray-400">
-                  업로드 전 강사별 변경 내용 확인 · 교강사 연락처 자동 제거
-                </p>
-              </div>
-
-              {uploadErr && <p className="text-xs text-red-600">{uploadErr}</p>}
-              {uploadMsg && <p className="text-xs text-green-600">{uploadMsg}</p>}
-              {uploadWarn && <p className="text-xs text-amber-600">{uploadWarn}</p>}
+            <div className="mt-3 space-y-2">
+              {uploadErr && <Note tone="error">{uploadErr}</Note>}
+              {uploadMsg && <Note tone="ok">{uploadMsg}</Note>}
+              {uploadWarn && <Note tone="warn">{uploadWarn}</Note>}
               {tisTargets && !showTis && (
-                <button
-                  onClick={() => setShowTis(true)}
-                  className="text-xs px-3 py-1.5 border border-blue-600 text-blue-600 rounded-lg hover:bg-blue-50"
-                >
+                <Button variant="secondary" size="sm" onClick={() => setShowTis(true)}>
                   알림 대상 다시 열기 ({tisTargets.items.filter(t => t.phone && t.checked).length}명)
-                </button>
+                </Button>
               )}
               {notifyMsg && (
-                <div className={`text-xs ${notifyMsg.ok ? 'text-green-600' : 'text-amber-600'}`}>
-                  <p>{notifyMsg.text}</p>
+                <Note tone={notifyMsg.ok ? 'ok' : 'warn'}>
+                  <p className="font-semibold">{notifyMsg.text}</p>
                   {notifyMsg.details?.length > 0 && (
-                    <ul className="mt-1 list-disc pl-4 text-amber-700">
+                    <ul className="mt-1 list-disc pl-5">
                       {notifyMsg.details.map((d, i) => <li key={i}>{d}</li>)}
                     </ul>
                   )}
                   {notifyMsg.results?.length > 0 && <NotifyResults results={notifyMsg.results} />}
-                </div>
+                </Note>
               )}
-
-              <button
-                onClick={handleResetUpload}
-                disabled={busy || source !== 'uploaded'}
-                className="text-xs text-gray-500 hover:text-red-600 disabled:opacity-40"
-              >
-                기본 시간표로 되돌리기
-              </button>
-            </section>
-
-            {/* ── 기업교육팀 · 과정별 시간표 ─────────────── */}
-            <section className="space-y-3 pt-4 border-t border-gray-200">
-              <div className="flex items-center gap-2">
-                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-purple-100 text-purple-700">기업교육팀</span>
-                <h4 className="text-sm font-semibold text-gray-800">과정별 시간표 (과정마다 파일 1개)</h4>
-              </div>
-
-              <div
-                onClick={() => !busy && corpFileRef.current?.click()}
-                className="border-2 border-dashed border-gray-300 hover:border-purple-400 hover:bg-purple-50/30 rounded-xl p-4 text-center cursor-pointer transition-colors"
-                onDragOver={(e) => { e.preventDefault(); }}
-                onDrop={(e) => {
-                  e.preventDefault();
-                  if (!busy) handleCorpUploadFiles(e.dataTransfer.files);
-                }}
-              >
-                <input
-                  ref={corpFileRef}
-                  type="file"
-                  accept=".xlsx"
-                  multiple
-                  className="hidden"
-                  onChange={(e) => {
-                    handleCorpUploadFiles(e.target.files);
-                    e.target.value = '';
-                  }}
-                />
-                <p className="text-sm font-medium text-gray-700">
-                  훈련시간표 엑셀(.xlsx) 업로드 — 여러 파일 선택 가능
-                </p>
-                <p className="text-xs text-gray-400 mt-1">
-                  파일이 추가로 쌓이며, 같은 파일명을 올리면 해당 과정만 교체됩니다.
-                  업로드 전 확인 창이 표시됩니다.
-                </p>
-              </div>
-
-              {corpErr && <p className="text-xs text-red-600">{corpErr}</p>}
-              {corpMsg && <p className="text-xs text-green-600">{corpMsg}</p>}
-
-              {/* 업로드된 파일 목록 */}
-              <div className="space-y-1.5">
-                {corpFiles === null && (
-                  <p className="text-xs text-gray-400">목록 불러오는 중...</p>
-                )}
-                {corpFiles !== null && corpFiles.length === 0 && (
-                  <p className="text-xs text-gray-400">
-                    업로드된 파일 없음
-                    {corpSource === 'default' && ' — 현재 내장 기본 파일을 표시 중입니다. 업로드하면 업로드 목록으로 대체됩니다.'}
-                  </p>
-                )}
-                {(corpFiles || [])
-                  .slice()
-                  .sort((a, b) => a.fileName.localeCompare(b.fileName, 'ko'))
-                  .map(f => (
-                    <div key={f.id} className="flex items-center gap-2 px-2.5 py-1.5 bg-gray-50 border border-gray-100 rounded-lg">
-                      <div className="min-w-0 flex-1">
-                        <p className="text-xs font-medium text-gray-700 truncate" title={f.fileName}>{f.fileName}</p>
-                        {f.uploadedAt && (
-                          <p className="text-[10px] text-gray-400">{new Date(f.uploadedAt).toLocaleString('ko-KR')}</p>
-                        )}
-                      </div>
-                      <button
-                        onClick={() => handleCorpDelete(f)}
-                        disabled={busy}
-                        className="flex-shrink-0 text-[11px] px-2 py-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded disabled:opacity-40"
-                        title="이 과정 시간표 삭제"
-                      >
-                        삭제
-                      </button>
-                    </div>
-                  ))}
-              </div>
-            </section>
-
-            {busy && (
-              <p className="text-xs text-blue-600">{busyMsg || '처리 중...'}</p>
-            )}
-
-            <div className="flex justify-end items-center pt-2 border-t border-gray-100">
-              <button
-                onClick={handleLogoutClick}
-                disabled={busy}
-                className="text-xs px-3 py-1.5 text-gray-600 hover:bg-gray-100 rounded-lg"
-              >
-                로그아웃
-              </button>
             </div>
-          </div>
-        </Modal>
+
+            <Button variant="ghost" size="sm" className="mt-3 -ml-2 hover:text-del" onClick={handleResetUpload} disabled={busy || source !== 'uploaded'}>
+              <RotateCcw aria-hidden="true" className="w-4 h-4" />
+              기본 시간표로 되돌리기
+            </Button>
+          </Card>
+
+          {/* ── 기업교육팀 · 과정별 시간표 ─────────────── */}
+          <Card>
+            <Tag>기업교육팀</Tag>
+            <h2 className="mt-2 text-title2 text-ink">과정별 시간표</h2>
+            <p className="mt-1 text-label text-ink-2">과정마다 파일 1개예요. 파일이 쌓이고, 같은 파일명을 올리면 그 과정만 바뀌어요. 올리기 전에 확인 창이 떠요.</p>
+
+            <input
+              ref={corpFileRef}
+              type="file"
+              accept=".xlsx"
+              multiple
+              className="hidden"
+              onChange={(e) => {
+                handleCorpUploadFiles(e.target.files);
+                e.target.value = '';
+              }}
+            />
+            <div
+              onClick={() => !busy && corpFileRef.current?.click()}
+              className="mt-4 hidden lg:flex flex-col items-center justify-center gap-1 rounded-[16px] border-2 border-dashed border-line p-6 text-center cursor-pointer hover:bg-fill/60"
+              onDragOver={(e) => { e.preventDefault(); }}
+              onDrop={(e) => {
+                e.preventDefault();
+                if (!busy) handleCorpUploadFiles(e.dataTransfer.files);
+              }}
+            >
+              <Upload aria-hidden="true" className="w-6 h-6 text-ink-3" />
+              <p className="text-body font-semibold text-ink">훈련시간표 엑셀을 여기로 끌어다 놓아도 돼요</p>
+              <p className="text-label text-ink-2">.xlsx · 여러 파일을 한 번에 올릴 수 있어요</p>
+            </div>
+            <Button variant="secondary" size="lg" block className="mt-4" disabled={busy} onClick={() => !busy && corpFileRef.current?.click()}>
+              <Upload aria-hidden="true" className="w-5 h-5" />
+              훈련시간표 엑셀 올리기
+            </Button>
+
+            <div className="mt-3 space-y-2">
+              {corpErr && <Note tone="error">{corpErr}</Note>}
+              {corpMsg && <Note tone="ok">{corpMsg}</Note>}
+            </div>
+
+            {/* 업로드된 파일 목록 */}
+            <div className="mt-4">
+              {corpFiles === null && <p className="text-label text-ink-2">목록을 불러오고 있어요...</p>}
+              {corpFiles !== null && corpFiles.length === 0 && (
+                <p className="text-label text-ink-2">
+                  올라온 파일이 없어요
+                  {corpSource === 'default' && ' — 지금은 내장 기본 파일을 보여 주고 있어요. 올리면 업로드 목록으로 바뀌어요.'}
+                </p>
+              )}
+              {corpFiles?.length > 0 && (
+                <ul className="divide-y divide-line rounded-[14px] bg-fill">
+                  {(corpFiles || [])
+                    .slice()
+                    .sort((a, b) => a.fileName.localeCompare(b.fileName, 'ko'))
+                    .map(f => (
+                      <li key={f.id} className="flex items-center gap-3 px-4 py-3">
+                        <div className="min-w-0 flex-1">
+                          <p className="text-label font-semibold text-ink">{f.fileName}</p>
+                          {f.uploadedAt && (
+                            <p className="text-caption text-ink-2 tabular">{new Date(f.uploadedAt).toLocaleString('ko-KR')}</p>
+                          )}
+                        </div>
+                        <Button
+                          variant="danger"
+                          size="sm"
+                          onClick={() => handleCorpDelete(f)}
+                          disabled={busy}
+                          aria-label={`${f.fileName} 삭제`}
+                        >
+                          <Trash2 aria-hidden="true" className="w-4 h-4" />
+                          삭제
+                        </Button>
+                      </li>
+                    ))}
+                </ul>
+              )}
+            </div>
+          </Card>
+
+          <Button variant="surface" onClick={handleLogoutClick} disabled={busy}>
+            <LogOut aria-hidden="true" className="w-5 h-5" />
+            로그아웃
+          </Button>
+        </div>
+      )}
+
+      {/* 처리 중 안내 (화면 아래 작은 알림) */}
+      {busy && (
+        <div
+          role="status"
+          aria-live="polite"
+          className="fixed inset-x-0 bottom-[calc(72px+env(safe-area-inset-bottom))] lg:bottom-8 z-[60] mx-auto w-fit max-w-[90vw] rounded-full bg-ink px-5 py-3 text-label font-semibold text-surface shadow-[var(--shadow-pop)] lg:ml-[calc(50%+120px)] lg:-translate-x-1/2"
+        >
+          {busyMsg || '처리 중...'}
+        </div>
       )}
 
       {/* 업로드 전 변경 미리보기 */}
@@ -698,36 +685,54 @@ export default function AdminPanel({
           onClose={() => setShowTis(false)}
         />
       )}
-    </>
+    </Screen>
   );
 }
 
-// 발송 도우미 상태: "발송 도우미 연결됨 · dry-run · IP 정상 (x.x.x.x)" + 막힌 사유
+// 결과 · 오류 안내 상자
+const NOTE_TONE = {
+  ok: 'bg-add-weak text-ink',
+  warn: 'bg-mod-weak text-ink',
+  error: 'bg-del-weak text-del',
+};
+function Note({ tone, children }) {
+  return (
+    <div role={tone === 'error' ? 'alert' : 'status'} className={`rounded-[14px] px-4 py-3 text-label ${NOTE_TONE[tone]}`}>
+      {children}
+    </div>
+  );
+}
+
+// 발송 도우미 상태: 한 줄 칩 "연결됨 · dry-run · IP 정상" + 대상 · 템플릿 · 한도 + 막힌 사유
 const IP_LABEL = { ok: 'IP 정상', mismatch: 'IP 불일치', unknown: 'IP 확인 안 됨' };
 
 function HelperStatus({ helper, onRecheck }) {
   const recheck = (
-    <button onClick={onRecheck} className="ml-auto flex-shrink-0 underline hover:no-underline">다시 확인</button>
+    <button type="button" onClick={onRecheck} className="press ml-auto flex-shrink-0 min-h-11 px-3 rounded-full text-label font-semibold text-primary-ink hover:bg-surface">
+      다시 확인
+    </button>
   );
   if (!helper) {
-    return <p className="text-xs text-gray-400">발송 도우미 확인 중...</p>;
+    return <p role="status" className="text-label text-ink-2">발송 도우미 확인 중...</p>;
   }
   if (!helper.connected) {
     return (
-      <div className="flex items-start gap-2 text-xs text-amber-700 bg-amber-50 rounded-lg px-3 py-2">
-        <div>
-          <p className="font-medium">알림 발송 불가: 발송 도우미가 꺼져 있습니다</p>
-          <p>
-            발송 도우미를 실행해 주세요 (<code className="font-mono">npm run notify-helper</code>).
-            알림 없이 업로드만 하는 것은 가능합니다.
-          </p>
+      <div className="rounded-[14px] bg-mod-weak px-4 py-3 text-label text-ink">
+        <div className="flex flex-wrap items-center gap-2">
+          <StatusChip dot="bg-mod">발송 도우미 꺼짐</StatusChip>
+          {recheck}
         </div>
-        {recheck}
+        <p className="mt-2 font-semibold">알림 발송 불가: 발송 도우미가 꺼져 있습니다</p>
+        <p className="text-ink-2">
+          발송 도우미를 실행해 주세요 (<code className="font-mono">npm run notify-helper</code>).
+          알림 없이 업로드만 하는 것은 가능합니다.
+        </p>
       </div>
     );
   }
   const ipText = `${IP_LABEL[helper.ipStatus] || 'IP 확인 안 됨'}${helper.publicIp ? ` (${helper.publicIp})` : ''}`;
   const summary = `발송 도우미 연결됨 · ${helper.mode} · ${ipText}`;
+  const chipText = `연결됨 · ${helper.mode} · ${IP_LABEL[helper.ipStatus] || 'IP 확인 안 됨'}`;
   const target = helper.mode === 'dry-run'
     ? '실제 발송 없음'
     : helper.testPhone
@@ -737,63 +742,72 @@ function HelperStatus({ helper, onRecheck }) {
 
   if (!helper.ok) {
     return (
-      <div className="flex items-start gap-2 text-xs text-red-700 bg-red-50 rounded-lg px-3 py-2">
-        <div>
-          <p className="font-medium">{summary}</p>
-          <p className="mt-1">알림 발송 불가:</p>
-          <ul className="list-disc pl-4">
-            {(helper.problems || []).map((p, i) => <li key={i}>{p}</li>)}
-          </ul>
+      <div className="rounded-[14px] bg-del-weak px-4 py-3 text-label text-ink">
+        <div className="flex flex-wrap items-center gap-2">
+          <StatusChip dot="bg-del" title={summary}>{chipText}</StatusChip>
+          {recheck}
         </div>
-        {recheck}
+        <p className="mt-2 font-semibold text-del">알림 발송 불가:</p>
+        <ul className="list-disc pl-5">
+          {(helper.problems || []).map((p, i) => <li key={i}>{p}</li>)}
+        </ul>
       </div>
     );
   }
   const tone = helper.mode === 'production' && !helper.testPhone
-    ? 'text-red-700 bg-red-50'
-    : 'text-green-700 bg-green-50';
+    ? 'bg-del-weak'
+    : 'bg-add-weak';
   return (
-    <div className={`flex items-start gap-2 text-xs rounded-lg px-3 py-2 ${tone}`}>
-      <div>
-        <p className="font-medium">{summary}</p>
-        <p>
-          {target}
-          <span className="text-gray-500"> · 템플릿 {helper.template}</span>
-          {helper.limits && helper.mode !== 'dry-run' && (
-            <span className="text-gray-500">
-              {' '}· 이번 시간 {helper.limits.requestsLastHour}/{helper.limits.maxRequestsPerHour}회 · 오늘 {helper.limits.sentToday}/{helper.limits.maxSendsPerDay}건
-            </span>
-          )}
-        </p>
-        {warnings.length > 0 && (
-          <ul className="mt-1 list-disc pl-4 text-amber-700">
-            {warnings.map((w, i) => <li key={i}>{w}</li>)}
-          </ul>
-        )}
+    <div className={`rounded-[14px] px-4 py-3 text-label text-ink ${tone}`}>
+      <div className="flex flex-wrap items-center gap-2">
+        <StatusChip dot={helper.mode === 'production' && !helper.testPhone ? 'bg-del' : 'bg-add'} title={summary}>{chipText}</StatusChip>
+        {recheck}
       </div>
-      {recheck}
+      <p className="mt-2">
+        <span className="font-semibold">{target}</span>
+        <span className="text-ink-2"> · 템플릿 {helper.template}</span>
+        {helper.limits && helper.mode !== 'dry-run' && (
+          <span className="text-ink-2">
+            {' '}· 이번 시간 {helper.limits.requestsLastHour}/{helper.limits.maxRequestsPerHour}회 · 오늘 {helper.limits.sentToday}/{helper.limits.maxSendsPerDay}건
+          </span>
+        )}
+      </p>
+      {warnings.length > 0 && (
+        <ul className="mt-1 list-disc pl-5 text-mod">
+          {warnings.map((w, i) => <li key={i}>{w}</li>)}
+        </ul>
+      )}
     </div>
+  );
+}
+
+function StatusChip({ dot, title, children }) {
+  return (
+    <span title={title} className="inline-flex items-center gap-2 rounded-full bg-surface px-3 py-1.5 text-label font-semibold text-ink">
+      <span aria-hidden="true" className={`w-2 h-2 rounded-full ${dot}`} />
+      {children}
+    </span>
   );
 }
 
 // 발송 결과: 강사별 성공/실패와 사유
 const RESULT_STYLE = {
-  sent:      ['접수', 'bg-green-100 text-green-700'],
-  'dry-run': ['DRY-RUN', 'bg-gray-100 text-gray-600'],
-  failed:    ['실패', 'bg-red-100 text-red-700'],
+  sent:      ['접수', 'added'],
+  'dry-run': ['DRY-RUN', 'neutral'],
+  failed:    ['실패', 'removed'],
 };
 
 function NotifyResults({ results }) {
   return (
-    <ul className="mt-1.5 space-y-1 text-gray-700">
+    <ul className="mt-2 space-y-1.5">
       {results.map((r, i) => {
-        const [label, cls] = RESULT_STYLE[r.status] || RESULT_STYLE.failed;
+        const [label, tone] = RESULT_STYLE[r.status] || RESULT_STYLE.failed;
         return (
-          <li key={i} className="flex items-start gap-2">
-            <span className={`flex-shrink-0 text-[10px] font-bold px-1.5 py-0.5 rounded ${cls}`}>{label}</span>
-            <span className="font-medium">{r.name}</span>
-            <span className="text-gray-400">{r.phone}</span>
-            <span className={r.status === 'failed' ? 'text-red-600' : 'text-gray-500'}>{r.reason}</span>
+          <li key={i} className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+            <Badge tone={tone}>{label}</Badge>
+            <span className="font-semibold text-ink">{r.name}</span>
+            <span className="text-ink-2 tabular">{r.phone}</span>
+            <span className={r.status === 'failed' ? 'text-del' : 'text-ink-2'}>{r.reason}</span>
           </li>
         );
       })}
@@ -801,34 +815,34 @@ function NotifyResults({ results }) {
   );
 }
 
-// 도우미가 만든 실제 발송 문구 (카카오톡에 가는 그대로)
+// 도우미가 만든 실제 발송 문구 (카카오톡에 가는 그대로) — 노란 칸
 function SendText({ helper, sendTexts, result }) {
   let body;
   if (!helper?.connected) {
-    body = <p className="text-gray-400">발송 도우미가 연결되면 실제 발송 문구가 표시됩니다</p>;
+    body = <p>발송 도우미가 연결되면 실제 발송 문구가 표시됩니다</p>;
   } else if (!sendTexts) {
-    body = <p className="text-gray-400">발송 문구 불러오는 중...</p>;
+    body = <p>발송 문구 불러오는 중...</p>;
   } else if (sendTexts.error) {
-    body = <p className="text-red-600">{sendTexts.error}</p>;
+    body = <p className="font-semibold text-del">{sendTexts.error}</p>;
   } else if (result?.text) {
     body = (
       <>
-        <pre className="whitespace-pre-wrap break-words font-sans text-gray-800">{result.text}</pre>
+        <pre className="whitespace-pre-wrap break-words font-sans">{result.text}</pre>
         {sendTexts.buttons.map((b, i) => (
-          <span key={i} className="inline-block mt-1 mr-1 px-2 py-0.5 border border-yellow-300 rounded bg-white text-gray-700">{b}</span>
+          <span key={i} className="inline-block mt-2 mr-1 px-3 py-1 rounded-[10px] border border-kakao-line bg-surface text-label font-semibold text-ink">{b}</span>
         ))}
       </>
     );
   } else {
     body = (
-      <p className="text-red-600">
+      <p className="font-semibold text-del">
         보내지 않음: {result?.result || '문구를 만들 수 없습니다'}{result?.code ? ` (${result.code})` : ''}
       </p>
     );
   }
   return (
-    <div className="text-[11px] leading-relaxed bg-yellow-50 border border-yellow-200 rounded p-2">
-      <p className="text-[10px] font-bold text-yellow-800 mb-1">카카오톡 발송 문구</p>
+    <div className="rounded-[12px] border border-kakao-line bg-kakao p-3 text-label leading-relaxed text-kakao-ink">
+      <p className="mb-1 text-caption font-bold">카카오톡 발송 문구</p>
       {body}
     </div>
   );
@@ -848,108 +862,97 @@ function PreviewModal({ preview, helper, sendTexts, onRecheckHelper, onToggle, o
     : withPhoneCount > 0;
 
   return (
-    <Modal onClose={onCancel} title="업로드 전 변경 내용 확인" width="max-w-2xl">
-      <div className="space-y-4">
-        <div className="text-xs text-gray-500 space-y-0.5">
-          <p className="truncate">
-            새 파일: <span className="font-medium text-gray-700">{file.name}</span>
-          </p>
-          <p>현재 시간표와 비교한 결과입니다. 오늘 이전 날짜의 변경은 제외됩니다.</p>
-        </div>
-
-        {items.length === 0 ? (
-          <p className="py-6 text-sm text-center text-gray-500 bg-gray-50 rounded-lg">
-            강사 일정 변경 없음
-          </p>
-        ) : (
-          <div className="space-y-2">
-            <div className="flex items-baseline justify-between">
-              <p className="text-sm font-semibold text-gray-800">변경된 강사 {items.length}명</p>
-              <p className="text-xs text-gray-500">
-                {isHelper ? `알림 대상 ${checkedCount}명 선택` : `번호 있는 강사 ${withPhoneCount}명`}
-              </p>
-            </div>
-            <div className="space-y-2 max-h-[55vh] overflow-y-auto pr-1">
-              {items.map(t => (
-                <div key={t.teacher} className="border border-gray-200 rounded-lg p-3 space-y-2">
-                  <label className={`flex items-center gap-2 ${isHelper && t.phone ? 'cursor-pointer' : ''} ${isHelper && !t.phone ? 'cursor-not-allowed' : ''}`}>
-                    {isHelper && (
-                      <input
-                        type="checkbox"
-                        checked={t.checked}
-                        disabled={!t.phone}
-                        onChange={() => onToggle(t.teacher)}
-                        className="w-4 h-4 accent-blue-600"
-                      />
-                    )}
-                    <span className="text-sm font-medium text-gray-800">{t.teacher}</span>
-                    {t.phone ? (
-                      <span className="text-xs text-gray-500">{maskPhone(t.phone)}</span>
-                    ) : (
-                      <span
-                        className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-700"
-                        title="교강사연락처 시트에 번호가 없어 알림을 보낼 수 없습니다"
-                      >
-                        번호 없음
-                      </span>
-                    )}
-                    <span className="ml-auto text-[11px] text-gray-400">{t.changes.length}건</span>
-                  </label>
-                  <pre className="text-[11px] leading-relaxed text-gray-600 bg-gray-50 rounded p-2 whitespace-pre-wrap break-words font-sans">
-                    {t.message}
-                  </pre>
-                  {isHelper && t.phone && (
-                    <SendText helper={helper} sendTexts={sendTexts} result={sendTexts?.byTeacher?.[t.teacher]} />
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {items.length > 0 && isHelper && (
-          <div className="space-y-1">
-            <p className="text-xs text-gray-500">
-              카카오톡에는 강사마다 노란 칸의 문구가 [시간표 확인] 버튼과 함께 갑니다.
-              문구는 발송 도우미가 등록 템플릿{helper?.template ? `(${helper.template})` : ''}으로 만듭니다.
-              {helper?.usesChanges && ' 변경 내용은 최대 5줄이고, 오늘 이전 날짜는 빠집니다.'}
-              {' '}강사는 사이트의 강사별 탭에서 자세한 변경을 확인합니다.
-            </p>
-            <HelperStatus helper={helper} onRecheck={onRecheckHelper} />
-            {tooMany && (
-              <p className="text-xs text-red-600">한 번에 최대 {maxRecipients}명까지 알림을 보낼 수 있습니다.</p>
-            )}
-          </div>
-        )}
-        {items.length > 0 && !isHelper && (
-          <p className="text-xs text-gray-500 bg-gray-50 rounded-lg px-3 py-2">
-            [업로드 + TIS로 알림 보내기]를 누르면 업로드한 뒤 알림 대상 강사 목록이 열립니다.
-            거기서 수신자 엑셀이나 번호를 받아 TIS에서 발송하세요.
-          </p>
-        )}
-
-        <div className="flex flex-wrap justify-end gap-2 pt-3 border-t border-gray-100">
-          <button
-            onClick={onCancel}
-            className="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg"
-          >
-            취소
-          </button>
-          <button
-            onClick={() => onConfirm(false)}
-            className="px-4 py-2 text-sm border border-blue-600 text-blue-600 rounded-lg hover:bg-blue-50"
-          >
-            업로드만
-          </button>
-          <button
-            onClick={() => onConfirm(true)}
-            disabled={!canNotify}
-            className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
-          >
+    <BottomSheet
+      open
+      onClose={onCancel}
+      title="업로드 전 변경 내용 확인"
+      subtitle={`새 파일: ${file.name}`}
+      closeLabel="취소하고 닫기"
+      full
+      width="lg:max-w-[720px]"
+      footer={(
+        <div className="space-y-2">
+          <Button size="lg" block onClick={() => onConfirm(true)} disabled={!canNotify}>
             {isHelper ? '업로드 + 알림 발송' : '업로드 + TIS로 알림 보내기'}
-          </button>
+          </Button>
+          <div className="grid grid-cols-2 gap-2">
+            <Button variant="neutral" onClick={onCancel}>취소</Button>
+            <Button variant="secondary" onClick={() => onConfirm(false)}>업로드만</Button>
+          </div>
         </div>
-      </div>
-    </Modal>
+      )}
+    >
+      <p className="text-label text-ink-2">현재 시간표와 비교한 결과입니다. 오늘 이전 날짜의 변경은 제외됩니다.</p>
+
+      {items.length === 0 ? (
+        <p className="mt-4 rounded-[14px] bg-fill py-8 text-center text-body text-ink-2">강사 일정 변경 없음</p>
+      ) : (
+        <>
+          <div className="mt-4 grid grid-cols-2 gap-3">
+            <div className="rounded-[16px] bg-fill p-4">
+              <p className="text-label text-ink-2">변경된 강사</p>
+              <p className="mt-0.5 text-display text-ink tabular">{items.length}<span className="ml-1 text-title3">명</span></p>
+            </div>
+            <div className="rounded-[16px] bg-primary-weak p-4">
+              <p className="text-label text-ink-2">{isHelper ? '알림 대상 선택' : '번호 있는 강사'}</p>
+              <p className="mt-0.5 text-display text-primary-ink tabular">{isHelper ? checkedCount : withPhoneCount}<span className="ml-1 text-title3">명</span></p>
+            </div>
+          </div>
+          <ul className="mt-4 space-y-3">
+            {items.map(t => (
+              <li key={t.teacher} className="rounded-[16px] bg-fill p-4 space-y-3">
+                <label className={`flex items-center gap-3 min-h-11 ${isHelper && t.phone ? 'cursor-pointer' : ''} ${isHelper && !t.phone ? 'cursor-not-allowed' : ''}`}>
+                  {isHelper && (
+                    <input
+                      type="checkbox"
+                      checked={t.checked}
+                      disabled={!t.phone}
+                      onChange={() => onToggle(t.teacher)}
+                      className="w-5 h-5 accent-[var(--primary)]"
+                    />
+                  )}
+                  <span className="text-body font-semibold text-ink">{t.teacher}</span>
+                  {t.phone ? (
+                    <span className="text-label text-ink-2 tabular">{maskPhone(t.phone)}</span>
+                  ) : (
+                    <span title="교강사연락처 시트에 번호가 없어 알림을 보낼 수 없습니다">
+                      <Badge tone="changed">번호 없음</Badge>
+                    </span>
+                  )}
+                  <span className="ml-auto text-label text-ink-2">{t.changes.length}건</span>
+                </label>
+                <pre className="rounded-[12px] bg-surface p-3 text-label leading-relaxed text-ink-2 whitespace-pre-wrap break-words font-sans">
+                  {t.message}
+                </pre>
+                {isHelper && t.phone && (
+                  <SendText helper={helper} sendTexts={sendTexts} result={sendTexts?.byTeacher?.[t.teacher]} />
+                )}
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+
+      {items.length > 0 && isHelper && (
+        <div className="mt-4 space-y-3">
+          <p className="text-label text-ink-2">
+            카카오톡에는 강사마다 노란 칸의 문구가 [시간표 확인] 버튼과 함께 갑니다.
+            문구는 발송 도우미가 등록 템플릿{helper?.template ? `(${helper.template})` : ''}으로 만듭니다.
+            {helper?.usesChanges && ' 변경 내용은 최대 5줄이고, 오늘 이전 날짜는 빠집니다.'}
+            {' '}강사는 사이트의 강사 화면에서 자세한 변경을 확인합니다.
+          </p>
+          <HelperStatus helper={helper} onRecheck={onRecheckHelper} />
+          {tooMany && (
+            <p role="alert" className="text-label font-semibold text-del">한 번에 최대 {maxRecipients}명까지 알림을 보낼 수 있습니다.</p>
+          )}
+        </div>
+      )}
+      {items.length > 0 && !isHelper && (
+        <p className="mt-4 rounded-[14px] bg-fill px-4 py-3 text-label text-ink-2">
+          [업로드 + TIS로 알림 보내기]를 누르면 업로드한 뒤 알림 대상 강사 목록이 열립니다.
+          거기서 수신자 엑셀이나 번호를 받아 TIS에서 발송하세요.
+        </p>
+      )}
+    </BottomSheet>
   );
 }
