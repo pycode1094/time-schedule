@@ -39,7 +39,7 @@ export default function DayScreen({ app, route }) {
   const idle = data.courses.filter(c => !summary.rows.some(r => r.course.id === c.id));
 
   return (
-    <Screen title="날짜별 현황" onBack={() => goBack('/')}>
+    <Screen title="날짜별 현황" onBack={() => goBack('/course')}>
       <h1 className="text-title1 text-ink">{formatMDW(date)}</h1>
       <p className="mt-1 text-body text-ink-2">
         {summary.rows.length ? `과정 ${summary.rows.length}개가 수업해요` : '수업이 없는 날이에요'}

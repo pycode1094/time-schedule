@@ -51,7 +51,14 @@ function CourseHome({ app, mode }) {
   const { navigate } = app;
   return (
     <Screen>
-      <PageTitle title="과정" />
+      <PageTitle
+        title="전체 시간표"
+        right={
+          <button type="button" onClick={() => navigate('/day')} className="press inline-flex h-10 items-center rounded-full bg-surface px-4 text-label font-semibold text-ink-2">
+            날짜별 현황
+          </button>
+        }
+      />
       <Segmented
         className="mt-5 lg:max-w-sm"
         label="과정 보기"

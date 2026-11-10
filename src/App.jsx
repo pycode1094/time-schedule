@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, useSyncExternalStore } from 'react';
 import { WifiOff } from 'lucide-react';
 import AppShell from './screens/AppShell.jsx';
+import DesktopView from './desktop/ScheduleView.jsx';
 import Screen from './ui/Screen.jsx';
 import Button from './ui/Button.jsx';
 import EmptyState from './ui/EmptyState.jsx';
@@ -10,7 +11,19 @@ import { loadCorpSchedules } from './utils/parseCorpExcel.js';
 
 const ADMIN_STORAGE_KEY = 'time-schedule-admin-password';
 
+// 1024px 이상은 PC 화면(예전 탭 구조), 그 아래는 폰 화면(앱 스타일)
+const DESKTOP_QUERY = '(min-width: 1024px)';
+function subscribeDesktop(cb) {
+  const mq = window.matchMedia(DESKTOP_QUERY);
+  mq.addEventListener('change', cb);
+  return () => mq.removeEventListener('change', cb);
+}
+function useIsDesktop() {
+  return useSyncExternalStore(subscribeDesktop, () => window.matchMedia(DESKTOP_QUERY).matches, () => false);
+}
+
 export default function App() {
+  const isDesktop = useIsDesktop();
   const [parsedData, setParsedData] = useState(null);
   const [loading, setLoading]       = useState(true);
   const [error, setError]           = useState(null);
@@ -76,6 +89,33 @@ export default function App() {
           className="mt-16"
         />
       </Screen>
+    );
+  }
+
+  // PC 화면은 라이트 테마로 고정 (예전 화면의 색을 그대로 쓰기 때문)
+  useEffect(() => {
+    if (!isDesktop) return undefined;
+    const root = document.documentElement;
+    const prev = root.getAttribute('data-theme');
+    root.setAttribute('data-theme', 'light');
+    return () => {
+      if (prev === null) root.removeAttribute('data-theme');
+      else root.setAttribute('data-theme', prev);
+    };
+  }, [isDesktop]);
+
+  if (isDesktop && !status) {
+    return (
+      <DesktopView
+        data={parsedData}
+        changeLog={changeLog}
+        corpData={corpData}
+        onCorpReload={reloadCorp}
+        adminPassword={adminPassword}
+        onAdminLogin={handleAdminLogin}
+        onAdminLogout={handleAdminLogout}
+        onReload={reload}
+      />
     );
   }
 

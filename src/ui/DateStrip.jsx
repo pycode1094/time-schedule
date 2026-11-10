@@ -11,11 +11,80 @@ import { useSwipe } from '../lib/swipe.js';
 // ─────────────────────────────────────────────────────────────
 export default function DateStrip({
   days, selected, onSelect, marks = {}, title, subtitle, onTitleClick,
-  onPrev, onNext, canPrev = true, canNext = true, onToday, className = '', daysClassName = '',
+  onPrev, onNext, canPrev = true, canNext = true, onToday, className = '', daysClassName = '', variant = 'chips',
 }) {
   const today = todayStr();
   const swipe = useSwipe({ onLeft: canNext ? onNext : null, onRight: canPrev ? onPrev : null });
   const showToday = onToday && !days.includes(today);
+
+  if (variant === 'calendar') {
+    return (
+      <div className={className} {...swipe}>
+        <div className="flex items-center">
+          <IconButton label="이전 주" onClick={onPrev} disabled={!canPrev} className="-ml-3">
+            <ChevronLeft aria-hidden="true" className="w-5 h-5" />
+          </IconButton>
+          {onTitleClick ? (
+            <button type="button" onClick={onTitleClick} className="press min-h-11 rounded-[12px] px-1 text-left">
+              <span className="text-[15px] font-semibold text-ink-2">{title}</span>
+              {subtitle && <span className="ml-1.5 text-caption text-ink-3 tabular">{subtitle}</span>}
+            </button>
+          ) : (
+            <div className="px-1">
+              <span className="text-[15px] font-semibold text-ink-2">{title}</span>
+              {subtitle && <span className="ml-1.5 text-caption text-ink-3 tabular">{subtitle}</span>}
+            </div>
+          )}
+          <IconButton label="다음 주" onClick={onNext} disabled={!canNext}>
+            <ChevronRight aria-hidden="true" className="w-5 h-5" />
+          </IconButton>
+          {onToday && (
+            <button
+              type="button"
+              onClick={onToday}
+              disabled={!showToday}
+              className="press ml-auto h-8 rounded-full bg-primary-weak px-3 text-label font-semibold text-primary-ink disabled:opacity-0"
+            >
+              오늘
+            </button>
+          )}
+        </div>
+        <div role="group" aria-label="날짜 선택" className={`mt-1 grid ${daysClassName}`} style={{ gridTemplateColumns: `repeat(${days.length}, minmax(0, 1fr))` }}>
+          {days.map(d => {
+            const { d: dd, w } = dateParts(d);
+            const isSel = d === selected;
+            const isToday = d === today;
+            const m = marks[d] || {};
+            const label = `${dateParts(d).m}월 ${dd}일 ${w}요일${isToday ? ', 오늘' : ''}${m.lessons ? ', 수업 있음' : ', 수업 없음'}${m.changed ? ', 바뀐 수업 있음' : ''}`;
+            return (
+              <button
+                key={d}
+                type="button"
+                aria-pressed={isSel}
+                aria-label={label}
+                onClick={() => onSelect(d)}
+                className="press flex flex-col items-center gap-1 py-1"
+              >
+                <span className={`text-caption font-semibold ${isSel || isToday ? 'text-primary-ink' : 'text-ink-3'}`}>{w}</span>
+                <span
+                  className={[
+                    'inline-flex h-10 w-10 items-center justify-center rounded-full text-[17px] font-semibold tabular',
+                    isSel ? 'bg-primary text-white' : isToday ? 'text-primary-ink' : m.lessons ? 'text-ink' : 'text-icon-off',
+                  ].join(' ')}
+                >
+                  {dd}
+                </span>
+                <span className="flex h-1.5 items-center gap-1" aria-hidden="true">
+                  {m.lessons && !m.changed && <span className={`h-1.5 w-1.5 rounded-full ${isSel ? 'bg-primary' : 'bg-icon-off'}`} />}
+                  {m.changed && <span className="h-1.5 w-1.5 rounded-full bg-[#F59E0B]" />}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={className} {...swipe}>

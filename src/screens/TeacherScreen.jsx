@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { BellRing, CalendarX2, CircleCheck, ChevronRight, Users } from 'lucide-react';
+import { BellRing, CalendarX2, CircleCheck, ChevronDown, ChevronRight, Search } from 'lucide-react';
 import Screen from '../ui/Screen.jsx';
 import Card from '../ui/Card.jsx';
 import Button from '../ui/Button.jsx';
@@ -9,13 +9,12 @@ import DateStrip from '../ui/DateStrip.jsx';
 import BottomSheet from '../ui/BottomSheet.jsx';
 import EmptyState from '../ui/EmptyState.jsx';
 import { PageTitle } from '../ui/PageHeader.jsx';
-import LessonCard from './parts/LessonCard.jsx';
-import WeekGrid from './parts/WeekGrid.jsx';
+import DayTimeline from './parts/DayTimeline.jsx';
 import TeacherPicker from './parts/TeacherPicker.jsx';
 import ChangeList from './parts/ChangeList.jsx';
 import { buildChanges, changeForBlock, summarizeChange } from '../lib/changes.js';
 import {
-  collectLessons, courseIndex, datesWhere, formatMDW, mergeBlocks, markOverlaps, mondayOf, periodTime,
+  collectLessons, courseIndex, datesWhere, formatMDW, mergeBlocks, markOverlaps, mondayOf,
   todayStr, weekDays, weekRangeLabel, weekTitle, addDays,
 } from '../lib/schedule.js';
 import { openSheet, closeSheet, buildPath } from '../lib/router.js';
@@ -139,63 +138,61 @@ function TeacherView({ app, sheet }) {
     goWeek(mondayOf(card.date), card.date);
   }
 
-  const gridItems = [
-    ...blocks.map(b => ({
-      id: b.key, date: b.date, periodStart: b.periodStart, periodEnd: b.periodEnd,
-      title: b.subject, lines: [b.courseName, b.room], tone: b.change?.type,
-    })),
-    ...removed.map(c => ({
-      id: c.id, date: c.date, periodStart: c.periodStart, periodEnd: c.periodEnd,
-      title: c.subject, lines: [c.course, c.room], tone: 'removed',
-    })),
-  ];
 
+  // 앱 바: 이니셜 + 강사 이름(누르면 다른 강사) + 검색
   const header = (
-    <PageTitle
-      eyebrow={info?.field ? `강사 시간표 · ${info.field}` : '강사 시간표'}
-      title={`${teacher} 강사님`}
-      right={
-        <Button variant="surface" size="sm" onClick={() => openSheet('pick-teacher')}>
-          <Users aria-hidden="true" className="w-4 h-4" />
-          다른 강사 보기
-        </Button>
-      }
-    />
+    <div className="flex items-center gap-2.5 h-14">
+      <button
+        type="button"
+        onClick={() => openSheet('pick-teacher')}
+        className="press -ml-1 flex min-w-0 items-center gap-2.5 rounded-[14px] py-1 pl-1 pr-2"
+        aria-label={`${teacher} 강사님, 다른 강사 보기`}
+      >
+        <span aria-hidden="true" className="inline-flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-primary-weak text-[15px] font-bold text-primary-ink">
+          {teacher.slice(0, 1)}
+        </span>
+        <span className="min-w-0 text-left">
+          <span className="flex items-center gap-0.5 text-title3 font-bold text-ink">
+            <span className="truncate">{teacher} 강사님</span>
+            <ChevronDown aria-hidden="true" className="w-4 h-4 flex-shrink-0 text-ink-3" />
+          </span>
+          {info?.field && <span className="block truncate text-caption text-ink-3">{info.field}</span>}
+        </span>
+      </button>
+      <span className="flex-1" />
+      <button type="button" onClick={() => openSheet('search')} aria-label="검색" className="press -mr-2 inline-flex h-11 w-11 items-center justify-center rounded-full text-ink-2">
+        <Search aria-hidden="true" className="w-6 h-6" />
+      </button>
+    </div>
   );
 
   const changeCard = view.current.length > 0 ? (
     <button
       type="button"
       onClick={() => openSheet('changes')}
-      className="press relative w-full overflow-hidden rounded-card bg-mod-weak p-5 text-left"
+      className="press flex w-full items-center gap-3 rounded-[16px] bg-mod-weak px-4 py-3.5 text-left"
     >
-      <span className="flex items-start gap-3">
-        <span className="inline-flex flex-shrink-0 items-center justify-center w-10 h-10 rounded-full bg-surface text-mod">
-          <BellRing aria-hidden="true" className="w-5 h-5" />
+      <BellRing aria-hidden="true" className="w-5 h-5 flex-shrink-0 text-mod" />
+      <span className="min-w-0 flex-1">
+        <span className="block text-[15px] font-bold text-mod">바뀐 수업이 <span className="tabular">{view.current.length}</span>개 있어요</span>
+        <span className="mt-0.5 block truncate text-label text-ink-2">
+          {summarizeChange(view.current[0])}
+          {view.current.length > 1 ? ` 외 ${view.current.length - 1}개` : ''}
         </span>
-        <span className="min-w-0 flex-1">
-          <span className="block text-title2 text-ink">바뀐 수업이 <span className="tabular">{view.current.length}</span>개 있어요</span>
-          <span className="mt-1 block text-label text-ink-2">
-            {summarizeChange(view.current[0])}
-            {view.current.length > 1 ? ` 외 ${view.current.length - 1}개` : ''}
-          </span>
-          {view.latestUploadAt && <span className="mt-0.5 block text-caption text-ink-2">{formatUploadedAt(view.latestUploadAt)} 업로드 기준</span>}
-        </span>
-        <ChevronRight aria-hidden="true" className="mt-2 w-5 h-5 flex-shrink-0 text-ink-2" />
       </span>
+      <ChevronRight aria-hidden="true" className="w-5 h-5 flex-shrink-0 text-mod" />
     </button>
-  ) : (
+  ) : (view.past.length > 0 || view.history.length > 0) ? (
     <button
       type="button"
-      onClick={view.past.length || view.history.length ? () => openSheet('changes') : undefined}
-      disabled={!(view.past.length || view.history.length)}
-      className="press flex w-full items-center gap-3 rounded-card bg-surface px-5 py-4 text-left disabled:cursor-default"
+      onClick={() => openSheet('changes')}
+      className="press flex w-full items-center gap-2.5 rounded-[16px] bg-surface px-4 py-3 text-left"
     >
       <CircleCheck aria-hidden="true" className="w-5 h-5 flex-shrink-0 text-add" />
-      <span className="flex-1 text-body text-ink-2">다가올 수업 중 바뀐 수업은 없어요</span>
-      {(view.past.length > 0 || view.history.length > 0) && <ChevronRight aria-hidden="true" className="w-5 h-5 text-ink-3" />}
+      <span className="flex-1 text-label text-ink-2">다가올 수업 중 바뀐 수업은 없어요</span>
+      <ChevronRight aria-hidden="true" className="w-5 h-5 text-ink-3" />
     </button>
-  );
+  ) : null;
 
   const weekSummary = (
     <Card>
@@ -218,86 +215,82 @@ function TeacherView({ app, sheet }) {
     </Card>
   );
 
+  const timelineItems = dayItems.map(item => item.kind === 'lesson'
+    ? {
+      key: item.block.key, start: item.block.periodStart, end: item.block.periodEnd,
+      subject: item.block.subject, courseName: item.block.courseName, room: item.block.room,
+      tone: item.block.change?.type, overlap: item.block.overlap, change: item.block.change,
+    }
+    : {
+      key: item.card.id, start: item.card.periodStart, end: item.card.periodEnd,
+      subject: item.card.subject, courseName: item.card.course, room: item.card.room, tone: 'removed',
+    });
+  const dayLessons = dayItems.filter(i => i.kind === 'lesson');
+  const dayPeriods = dayLessons.reduce((n, i) => n + (i.block.periodEnd - i.block.periodStart + 1), 0);
+
   return (
-    <Screen>
-      {header}
-      {/* 바뀐 수업 (PC 는 오른쪽에 이번 주 요약) */}
-      <div className="mt-5 lg:grid lg:grid-cols-[minmax(0,1fr)_340px] lg:gap-4 lg:items-start">
-        {changeCard}
-        <div className="hidden lg:block">{weekSummary}</div>
+    <div className="animate-screen-in">
+      {/* 위에 붙는 앱 바 + 날짜 줄 */}
+      <div className="sticky top-0 z-30 -mx-5 bg-canvas/95 px-5 pb-3 pt-[env(safe-area-inset-top)] backdrop-blur lg:static lg:mx-0 lg:px-0">
+        {header}
+        <DateStrip
+          variant="calendar"
+          days={days}
+          selected={selected}
+          onSelect={setSelected}
+          marks={marks}
+          title={weekTitle(monday)}
+          subtitle={weekRangeLabel(days)}
+          onTitleClick={months.length > 1 ? () => openSheet('month') : undefined}
+          onPrev={() => goWeek(addDays(monday, -7))}
+          onNext={() => goWeek(addDays(monday, 7))}
+          canPrev={canPrev}
+          canNext={canNext}
+          onToday={() => goWeek(mondayOf(todayStr()), todayStr())}
+          className="mt-1"
+        />
       </div>
 
-      <div>
-        {/* 주간 */}
-        <div className="mt-6 lg:mt-8">
-          <DateStrip
-            days={days}
-            selected={selected}
-            onSelect={setSelected}
-            marks={marks}
-            title={weekTitle(monday)}
-            subtitle={weekRangeLabel(days)}
-            onTitleClick={months.length > 1 ? () => openSheet('month') : undefined}
-            onPrev={() => goWeek(addDays(monday, -7))}
-            onNext={() => goWeek(addDays(monday, 7))}
-            canPrev={canPrev}
-            canNext={canNext}
-            onToday={() => goWeek(mondayOf(todayStr()), todayStr())}
-            daysClassName="lg:hidden"
+      {changeCard && <div className="mt-2">{changeCard}</div>}
+
+      {/* 수업이 없는 주 */}
+      {weekEmpty ? (
+        <Card className="mt-4" aria-live="polite">
+          <EmptyState
+            icon={CalendarX2}
+            title="이번 주는 수업이 없어요"
+            description={jumpDate
+              ? `가장 가까운 수업은 ${formatMDW(jumpDate)}이에요.`
+              : '이 시간표에는 강사님 수업이 없어요.'}
+            action={jumpDate ? (
+              <Button variant="secondary" onClick={() => goWeek(mondayOf(jumpDate), jumpDate)}>
+                그 주로 가기
+              </Button>
+            ) : null}
+            className="py-6"
           />
-
-          {/* 수업이 없는 주 (폰 · PC 공통) */}
-          {weekEmpty && (
-            <Card className="mt-5 lg:mt-4" aria-live="polite">
-              <EmptyState
-                icon={CalendarX2}
-                title="이번 주는 수업이 없어요"
-                description={jumpDate
-                  ? `가장 가까운 수업은 ${formatMDW(jumpDate)}이에요.`
-                  : '이 시간표에는 강사님 수업이 없어요.'}
-                action={jumpDate ? (
-                  <Button variant="secondary" onClick={() => goWeek(mondayOf(jumpDate), jumpDate)}>
-                    그 주로 가기
-                  </Button>
-                ) : null}
-                className="py-6"
-              />
-            </Card>
-          )}
-
-          {/* 폰: 그날 수업 카드 */}
-          <div className={`lg:hidden mt-5 space-y-3 ${weekEmpty ? 'hidden' : ''}`} aria-live="polite">
-            <h2 className="px-1 text-label font-semibold text-ink-2">
-              {formatMDW(selected)} · {dayItems.filter(i => i.kind === 'lesson').length ? `수업 ${dayItems.filter(i => i.kind === 'lesson').length}개` : '수업 없음'}
-            </h2>
+        </Card>
+      ) : (
+        <div className="mt-5" aria-live="polite">
+          <h2 className="flex items-baseline gap-2 px-1">
+            <span className="text-title3 font-bold text-ink">{formatMDW(selected)}</span>
+            <span className="text-label text-ink-3 tabular">
+              {dayLessons.length ? `${dayPeriods}교시` : '수업 없음'}
+            </span>
+          </h2>
+          <div className="mt-4">
             {dayItems.length === 0 ? (
               <Card><EmptyState icon={CalendarX2} title="이날은 수업이 없어요" description="다른 날짜를 눌러 보세요." className="py-4" /></Card>
             ) : (
-              dayItems.map(item => item.kind === 'lesson'
-                ? <LessonCard key={item.block.key} block={item.block} change={item.block.change} />
-                : (
-                  <LessonCard
-                    key={item.card.id}
-                    removed
-                    block={{
-                      periodStart: item.card.periodStart, periodEnd: item.card.periodEnd,
-                      time: periodTime(item.card.periodStart, item.card.periodEnd),
-                      subject: item.card.subject, courseName: item.card.course, room: item.card.room,
-                    }}
-                  />
-                ))
+              <DayTimeline
+                items={timelineItems}
+                onItemClick={(it) => { if (it.tone) openSheet('changes'); }}
+              />
             )}
-            <div className="pt-3">{weekSummary}</div>
           </div>
-
-          {/* PC: 주간 그리드 */}
-          {!weekEmpty && (
-            <div className="hidden lg:block mt-4">
-              <WeekGrid days={days} items={gridItems} label={`${teacher} 강사님 주간 시간표`} />
-            </div>
-          )}
+          <div className="mt-6">{weekSummary}</div>
         </div>
-      </div>
+      )}
 
       <BottomSheet
         open={sheet === 'changes'}
@@ -325,7 +318,7 @@ function TeacherView({ app, sheet }) {
           })}
         </ListGroup>
       </BottomSheet>
-    </Screen>
+    </div>
   );
 }
 

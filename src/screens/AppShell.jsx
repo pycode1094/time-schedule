@@ -34,7 +34,7 @@ export default function AppShell({ data, changeLog, corpData, onCorpReload, admi
   );
   const withWeekend = useMemo(() => (data ? hasWeekendLessons(data.schedule) : false), [data]);
 
-  const isTeacherRoute = route.segments[0] === 'teacher';
+  const isTeacherRoute = route.segments[0] === 'teacher' || !route.segments[0];
   const teacherKnown = !!teacher && teachers.some(t => t.name === teacher);
 
   // 주소의 ?teacher= 맞추기 (같으면 건드리지 않음: 열린 시트의 기록을 지키기 위해)
@@ -127,7 +127,10 @@ function Routes({ route, app }) {
           source={data.meta.source}
         />
       );
-    default:
+    case 'home':
       return <HomeScreen app={app} route={route} />;
+    default:
+      // 첫 화면 = 내 시간표 (기억한 강사 캘린더, 처음이면 강사 검색)
+      return <TeacherScreen app={app} route={route} />;
   }
 }
