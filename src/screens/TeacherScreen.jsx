@@ -87,8 +87,10 @@ function TeacherView({ app, sheet }) {
     return [...set].sort();
   }, [schedule, teacher, curChanges, pastChanges]);
 
-  const minMonday = dates.length ? mondayOf(dates[0]) : null;
-  const maxMonday = dates.length ? mondayOf(dates[dates.length - 1]) : null;
+  // 주 이동 범위: 이 강사 수업 범위가 아니라 시간표 전체 범위 (수업 없는 주도 넘겨 볼 수 있게)
+  const allDates = useMemo(() => Object.keys(schedule).sort(), [schedule]);
+  const minMonday = allDates.length ? mondayOf(allDates[0]) : null;
+  const maxMonday = allDates.length ? mondayOf(allDates[allDates.length - 1]) : null;
 
   const [monday, setMonday] = useState(() => formatDate(pickInitialWeek(dates)));
   const days = useMemo(() => weekDays(monday, withWeekend), [monday, withWeekend]);
@@ -124,6 +126,13 @@ function TeacherView({ app, sheet }) {
   ].sort((a, b) => a.start - b.start);
 
   const months = useMemo(() => [...new Set(dates.map(d => d.slice(0, 7)))], [dates]);
+
+  // 수업이 없는 주: 가까운 수업 주로 가는 버튼 (다음 수업 우선, 없으면 지난 수업)
+  const weekEmpty = blocks.length === 0 && removed.length === 0;
+  const weekEnd = days[days.length - 1];
+  const nextLesson = dates.find(d => d > weekEnd);
+  const prevLesson = [...dates].reverse().find(d => d < days[0]);
+  const jumpDate = nextLesson || prevLesson;
 
   function jumpTo(card) {
     closeSheet();
@@ -237,8 +246,27 @@ function TeacherView({ app, sheet }) {
             daysClassName="lg:hidden"
           />
 
+          {/* 수업이 없는 주 (폰 · PC 공통) */}
+          {weekEmpty && (
+            <Card className="mt-5 lg:mt-4" aria-live="polite">
+              <EmptyState
+                icon={CalendarX2}
+                title="이번 주는 수업이 없어요"
+                description={jumpDate
+                  ? `가장 가까운 수업은 ${formatMDW(jumpDate)}이에요.`
+                  : '이 시간표에는 강사님 수업이 없어요.'}
+                action={jumpDate ? (
+                  <Button variant="secondary" onClick={() => goWeek(mondayOf(jumpDate), jumpDate)}>
+                    그 주로 가기
+                  </Button>
+                ) : null}
+                className="py-6"
+              />
+            </Card>
+          )}
+
           {/* 폰: 그날 수업 카드 */}
-          <div className="lg:hidden mt-5 space-y-3" aria-live="polite">
+          <div className={`lg:hidden mt-5 space-y-3 ${weekEmpty ? 'hidden' : ''}`} aria-live="polite">
             <h2 className="px-1 text-label font-semibold text-ink-2">
               {formatMDW(selected)} · {dayItems.filter(i => i.kind === 'lesson').length ? `수업 ${dayItems.filter(i => i.kind === 'lesson').length}개` : '수업 없음'}
             </h2>
@@ -263,9 +291,11 @@ function TeacherView({ app, sheet }) {
           </div>
 
           {/* PC: 주간 그리드 */}
-          <div className="hidden lg:block mt-4">
-            <WeekGrid days={days} items={gridItems} label={`${teacher} 강사님 주간 시간표`} />
-          </div>
+          {!weekEmpty && (
+            <div className="hidden lg:block mt-4">
+              <WeekGrid days={days} items={gridItems} label={`${teacher} 강사님 주간 시간표`} />
+            </div>
+          )}
         </div>
       </div>
 

@@ -5,7 +5,7 @@ import { StatCard } from '../ui/Card.jsx';
 import ListRow, { ListGroup } from '../ui/ListRow.jsx';
 import BottomSheet from '../ui/BottomSheet.jsx';
 import EmptyState from '../ui/EmptyState.jsx';
-import Button from '../ui/Button.jsx';
+import Button, { IconButton } from '../ui/Button.jsx';
 import { PageTitle } from '../ui/PageHeader.jsx';
 import TeacherPicker from './parts/TeacherPicker.jsx';
 import ChangeList from './parts/ChangeList.jsx';
@@ -29,6 +29,14 @@ export default function HomeScreen({ app, route }) {
 
   return (
     <Screen>
+      {/* 폰 상단: 통합 검색은 돋보기 아이콘으로 (PC 는 사이드바 검색) */}
+      <div className="lg:hidden -mt-3 mb-2 flex items-center justify-between">
+        <span className="text-label font-semibold text-ink-2">종합시간표</span>
+        <IconButton label="강사 · 과정 · 강의실 검색" onClick={() => openSheet('search')} className="-mr-2 text-ink">
+          <Search aria-hidden="true" className="w-6 h-6" />
+        </IconButton>
+      </div>
+
       {!known ? (
         <section aria-labelledby="home-teacher-search">
           <PageTitle
@@ -51,16 +59,7 @@ export default function HomeScreen({ app, route }) {
 
       <div className={known ? 'mt-5' : 'mt-10'}>
         {!known && <h2 className="mb-3 px-1 text-title3 text-ink">{formatMDW(today)} · 오늘 현황</h2>}
-        <button
-          type="button"
-          onClick={() => openSheet('search')}
-          className="press lg:hidden flex w-full items-center gap-3 h-12 px-4 rounded-input bg-surface text-body text-ink-2"
-        >
-          <Search aria-hidden="true" className="w-5 h-5" />
-          강사 · 과정 · 강의실 검색
-        </button>
-
-        <div className="mt-3 lg:mt-0 grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           <StatCard label="오늘 진행 과정" value={summary.rows.length} unit="개" onClick={() => navigate(buildPath('day', today))} hint="날짜별 현황 보기" />
           <StatCard
             label="최근 변경"

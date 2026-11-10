@@ -79,7 +79,12 @@ export default function AppShell({ data, changeLog, corpData, onCorpReload, admi
         activeId={activeId}
         onNavigate={(p) => navigate(p)}
         onSearch={() => openSheet('search')}
-        footer={meta ? <>시간표 {meta.dateRange.start} ~ {meta.dateRange.end}</> : null}
+        footer={meta ? (
+          <>
+            <span className="block">시간표 기간</span>
+            <span className="mt-0.5 block whitespace-nowrap tabular">{meta.dateRange.start} ~ {meta.dateRange.end}</span>
+          </>
+        ) : null}
       />
       <main id="main" className="lg:pl-60">
         <div key={route.path} className="mx-auto w-full max-w-[640px] lg:max-w-[1164px] px-5 lg:px-8 pb-28 lg:pb-16">

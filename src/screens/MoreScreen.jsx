@@ -86,15 +86,15 @@ export default function MoreScreen({ app }) {
         <h2 className="text-title3 text-ink">데이터 정보</h2>
         <dl className="mt-3 divide-y divide-line">
           {[
-            ['지금 보여 주는 시간표', meta.source === 'uploaded' ? '관리자 업로드본' : '기본 내장본'],
+            ['표시 중인 시간표', meta.source === 'uploaded' ? '관리자 업로드본' : '기본 내장본'],
             ['파일', meta.fileName],
-            ['기간', `${meta.dateRange.start} ~ ${meta.dateRange.end}`],
+            ['기간', <><span className="whitespace-nowrap">{meta.dateRange.start} ~</span> <span className="whitespace-nowrap">{meta.dateRange.end}</span></>],
             meta.uploadedAt ? ['업로드 시각', new Date(meta.uploadedAt).toLocaleString('ko-KR')] : null,
             ['과정 · 강사', `과정 ${data.courses.length}개 · 강사 ${data.teachers.length}명`],
           ].filter(Boolean).map(([k, v]) => (
-            <div key={k} className="flex items-start justify-between gap-4 py-3 text-label">
-              <dt className="text-ink-2">{k}</dt>
-              <dd className="text-right font-semibold text-ink">{v}</dd>
+            <div key={k} className="grid grid-cols-[7.5rem_minmax(0,1fr)] items-start gap-3 py-3 text-label">
+              <dt className="whitespace-nowrap text-ink-2">{k}</dt>
+              <dd className="text-right font-semibold text-ink tabular">{v}</dd>
             </div>
           ))}
         </dl>
