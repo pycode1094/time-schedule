@@ -276,7 +276,7 @@ export default function WeeklyOverviewTab({ courses, schedule }) {
                     </colgroup>
                     <thead>
                       <tr>
-                        <th className="bg-[#F7F8FA] text-[#5C6573] px-4 py-3 text-left text-[13px] font-semibold border-b border-[#E5E8EB]">
+                        <th className="bg-[#F2F4F6] text-[#5C6573] px-4 py-3 text-left text-[13px] font-semibold border-b border-r border-b-[#E5E8EB] border-r-[#D1D6DB]">
                           과정
                         </th>
                         {weekDates.map((dateStr, i) => {
@@ -296,7 +296,8 @@ export default function WeeklyOverviewTab({ courses, schedule }) {
                     <tbody>
                       {items.map(({ course, daySummaries }) => (
                         <tr key={course.id} className="border-b border-[#E5E8EB] last:border-b-0">
-                          <td className="px-4 py-3 align-top">
+                          {/* 과정 열: 옅은 회색 배경 + 진한 세로선으로 요일 열과 구분 */}
+                          <td className="px-4 py-3 align-top bg-[#F9FAFB] border-r border-[#D1D6DB]">
                             <p className="text-sm font-semibold text-[#191F28] leading-snug break-keep" title={course.name}>
                               {course.name}
                             </p>
