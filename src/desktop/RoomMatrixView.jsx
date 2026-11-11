@@ -158,16 +158,17 @@ export default function RoomMatrixView({ courses, schedule }) {
 
       {/* 매트릭스 */}
       <div className="overflow-x-auto rounded-2xl border border-[#E5E8EB] bg-white">
-        <table className="w-full border-collapse text-sm">
+        {/* table-fixed: 열 너비를 고정해 강의실 열이 한 글자 폭으로 찌그러지지 않게 (다른 PC 표와 같은 방식) */}
+        <table className="w-full border-collapse text-sm table-fixed min-w-[1080px]">
           <colgroup>
-            <col style={{ width: '140px' }} />
+            <col style={{ width: '150px' }} />
             {PERIOD_TIMES.map((_, i) => <col key={i} />)}
           </colgroup>
           <thead>
             <tr>
               <th className="bg-[#F7F8FA] text-[#4E5968] border-b border-[#E5E8EB] px-3 py-2.5 text-center text-xs font-semibold sticky left-0 z-20 border-r border-[#E5E8EB]">
                 <div className="leading-tight">강의실</div>
-                <div className="text-xs font-normal opacity-80 mt-0.5">{selectedDate} {dayLabel && `(${dayLabel})`}</div>
+                <div className="text-xs font-normal opacity-80 mt-0.5 whitespace-nowrap">{selectedDate} {dayLabel && `(${dayLabel})`}</div>
               </th>
               {PERIOD_TIMES.map((time, i) => (
                 <th key={i} className="bg-[#F7F8FA] text-[#4E5968] border-b border-[#E5E8EB] px-1.5 py-2.5 text-center font-semibold border-r last:border-r-0 border-[#E5E8EB] min-w-[110px]">
@@ -184,7 +185,7 @@ export default function RoomMatrixView({ courses, schedule }) {
               return (
                 <tr key={room}>
                   <td className="bg-gray-50 px-2 py-1.5 border-r border-b border-gray-100 align-middle sticky left-0 z-10">
-                    <div className="text-xs font-semibold text-gray-800 leading-tight">{room}</div>
+                    <div className="text-xs font-semibold text-gray-800 leading-tight break-keep">{room}</div>
                     <div className="text-xs text-[#5C6573] mt-0.5">{used}/8 사용</div>
                   </td>
                   {periods.map((cell, pIdx) => {
@@ -203,7 +204,7 @@ export default function RoomMatrixView({ courses, schedule }) {
                         {cell.map((item, i) => (
                           <div key={i} className={i > 0 ? 'mt-1 pt-1 border-t border-red-200' : ''}>
                             <span
-                              className={`inline-block text-[11px] font-bold px-1 py-0.5 rounded ${CAT_BADGE[item.category] || 'bg-gray-100 text-gray-600'}`}
+                              className={`inline-block max-w-full truncate align-top text-[11px] font-bold px-1 py-0.5 rounded ${CAT_BADGE[item.category] || 'bg-gray-100 text-gray-600'}`}
                               title={item.courseName}
                             >
                               {shortenCourseName(item.courseName)}
