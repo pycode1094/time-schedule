@@ -73,6 +73,9 @@ export function normalizeCorpRoom(raw) {
   if (paren) return normalizeRoom(s);
   const bare = s.match(/^(\d{3})\s*호?$/);
   if (bare && ROOM_CANONICAL[bare[1]]) return ROOM_CANONICAL[bare[1]];
+  // "본원 전기공사실(906)" 처럼 호실 번호가 뒤에 붙은 표기
+  const tail = s.match(/\(\s*(\d{3})\s*\)\s*$/);
+  if (tail && ROOM_CANONICAL[tail[1]]) return ROOM_CANONICAL[tail[1]];
   // 약식 명칭 → 별칭 매핑
   const key = s.replace(/\s+/g, '').toUpperCase();
   if (CORP_ROOM_ALIAS_LOOKUP[key]) return CORP_ROOM_ALIAS_LOOKUP[key];
@@ -157,12 +160,26 @@ function parseCorpWorkbook(arrayBuffer, fileName, courseId) {
   if (headerRowIdx === -1 || periodCols.length === 0) return null;
 
   // 3) 하루 3행 블록 파싱
+  //   날짜 · 라벨(교과목/교강사/장소)은 첫 교시 열보다 왼쪽에 있다.
+  //   보통 A열 날짜 · B열 라벨이지만, 맨 앞에 "주차" 열이 있는 파일은
+  //   B열 날짜 · C열 라벨로 한 칸씩 밀린다 → 왼쪽 열 전체에서 찾는다.
+  const firstPeriodCol = Math.min(...periodCols.map(pc => pc.col));
+  const findDateCell = (row) => {
+    for (let c = 0; c < firstPeriodCol; c++) {
+      const s = clean(row?.[c]);
+      if (s && /^\d{1,2}\s*\/\s*\d{1,2}/.test(s)) return s;
+    }
+    return null;
+  };
+  const isPlaceRow = (row) =>
+    (row || []).slice(0, firstPeriodCol).some(v => (clean(v) || '').includes('장소'));
+
   const schedule = {};
   const teacherSet = new Set();
   const roomSet = new Set();
   let r = headerRowIdx + 2;
   while (r < rows.length) {
-    const c0 = clean(rows[r]?.[0]);
+    const c0 = findDateCell(rows[r]);
     const dm = c0 && c0.match(/^(\d{1,2})\s*\/\s*(\d{1,2})/);
     if (!dm) { r++; continue; }
 
@@ -171,8 +188,8 @@ function parseCorpWorkbook(arrayBuffer, fileName, courseId) {
     const subjRow = rows[r] || [];
     let teacherRow = rows[r + 1] || [];
     let roomRow = rows[r + 2] || [];
-    // 행 순서가 다른 경우 라벨(col1)로 보정
-    if ((clean(teacherRow[1]) || '').includes('장소')) {
+    // 행 순서가 다른 경우 라벨로 보정
+    if (isPlaceRow(teacherRow)) {
       [teacherRow, roomRow] = [roomRow, teacherRow];
     }
 
